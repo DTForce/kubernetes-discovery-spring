@@ -1,0 +1,53 @@
+buildscript {
+    ext {
+        springBootVersion = '2.0.0.RC1'
+    }
+    repositories {
+        mavenCentral()
+        maven {
+            url 'https://repo.spring.io/libs-milestone'
+        }
+    }
+}
+
+plugins {
+    id 'org.springframework.boot' version '1.5.10.RELEASE'
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url 'https://repo.spring.io/libs-milestone'
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+
+sourceCompatibility = 1.8
+
+dependencyManagement {
+    dependencies {
+        dependency 'org.springframework:spring-context:5.0.3.RELEASE'
+        dependency 'org.springframework.cloud:spring-cloud-commons:2.0.0.M6'
+        dependency 'io.fabric8:kubernetes-client:3.1.8'
+    }
+}
+
+dependencies {
+    // Spring + Spring Cloud
+    compile('org.springframework:spring-context')
+    compile('org.springframework.cloud:spring-cloud-commons')
+
+    // Kubernetes Client
+    compile('io.fabric8:kubernetes-client')
+
+    // Annotation Processor
+    compileOnly('org.springframework.boot:spring-boot-configuration-processor')
+
+    // test dependencies
+    testCompile('org.springframework.boot:spring-boot-starter-test')
+}
