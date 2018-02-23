@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 public class DiscoveryTests
 {
+
 	private final String serviceId = "dummy-service";
 
 	@Rule
@@ -80,4 +81,5 @@ public class DiscoveryTests
 		assertThat(serviceInstance.getUri()).isNotNull();
 		assertThat(serviceInstance.getMetadata()).isNotEmpty();
 	}
+
 }
