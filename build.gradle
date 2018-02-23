@@ -31,6 +31,7 @@ sourceCompatibility = 1.8
 
 dependencyManagement {
     dependencies {
+        dependency 'org.springframework.boot:spring-boot-autoconfigure:2.0.0.M6'
         dependency 'org.springframework:spring-context:5.0.3.RELEASE'
         dependency 'org.springframework.cloud:spring-cloud-commons:2.0.0.M6'
         dependency 'io.fabric8:kubernetes-client:3.1.8'
@@ -39,6 +40,7 @@ dependencyManagement {
 
 dependencies {
     // Spring + Spring Cloud
+    compile('org.springframework.boot:spring-boot-autoconfigure')
     compile('org.springframework:spring-context')
     compile('org.springframework.cloud:spring-cloud-commons')
 
