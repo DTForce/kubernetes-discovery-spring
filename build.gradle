@@ -24,6 +24,7 @@ repositories {
 apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
+apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
 
 sourceCompatibility = 1.8
@@ -38,6 +39,8 @@ dependencyManagement {
         dependency 'org.springframework:spring-context:5.0.3.RELEASE'
         dependency 'org.springframework.cloud:spring-cloud-commons:2.0.0.M6'
         dependency 'io.fabric8:kubernetes-client:3.1.8'
+        dependency 'io.fabric8:kubernetes-server-mock:3.1.8'
+        dependency 'org.assertj:assertj-core:3.9.0'
     }
 }
 
@@ -55,4 +58,6 @@ dependencies {
 
     // test dependencies
     testCompile('org.springframework.boot:spring-boot-starter-test')
+    testCompile('io.fabric8:kubernetes-server-mock')
+    testCompile('org.assertj:assertj-core')
 }

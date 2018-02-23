@@ -15,8 +15,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-@Component
-@ConditionalOnProperty(name = "spring.kubernetes.discovery.enabled", havingValue="true")
 public class KubernetesDiscoveryClient implements DiscoveryClient
 {
 	// TODO: namespace detection
@@ -25,7 +23,12 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 
 	public KubernetesDiscoveryClient()
 	{
-		kubeClient = new DefaultKubernetesClient();
+		this(new DefaultKubernetesClient());
+	}
+
+	public KubernetesDiscoveryClient(KubernetesClient client)
+	{
+		kubeClient = client;
 	}
 
 	@Override
@@ -53,7 +56,7 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 			List<ServiceInstance> serviceInstances = new ArrayList<>();
 			serviceInstances.add(new DefaultServiceInstance(
 				svcName, svcHost, svcPortNumber, false));
-			return new ArrayList<ServiceInstance>();
+			return serviceInstances;
 		}
 
 		return Collections.emptyList();
