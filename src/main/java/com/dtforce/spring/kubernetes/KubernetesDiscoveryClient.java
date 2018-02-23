@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public class KubernetesDiscoveryClient implements DiscoveryClient
 {
@@ -49,13 +50,14 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 				return Collections.emptyList();
 			}
 
-			String svcName = service.getMetadata().getName();
-			String svcHost = service.getSpec().getClusterIP();
-			int svcPortNumber = svcPort.getPort();
-
 			List<ServiceInstance> serviceInstances = new ArrayList<>();
 			serviceInstances.add(new DefaultServiceInstance(
-				svcName, svcHost, svcPortNumber, false));
+				service.getMetadata().getName(),
+				service.getSpec().getClusterIP(),
+				svcPort.getPort(),
+				false,
+				service.getMetadata().getAnnotations()
+			));
 			return serviceInstances;
 		}
 

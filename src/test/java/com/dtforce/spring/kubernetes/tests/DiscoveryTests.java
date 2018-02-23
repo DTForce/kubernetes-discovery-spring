@@ -12,7 +12,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,9 +38,14 @@ public class DiscoveryTests
 
 		assertThat(discoveryClient.getServices()).isEmpty();
 
+		Map<String, String> svcAnnotations = new HashMap<>();
+		svcAnnotations.put("beta.kubernetes.io/arch", "amd64");
+		svcAnnotations.put("beta.kubernetes.io/os", "linux");
+
 		Service svc = new ServiceBuilder()
 			.withNewMetadata()
 				.withName(serviceId)
+				.withAnnotations(svcAnnotations)
 			.and()
 			.withNewSpec()
 				.withType("ClusterIP")
@@ -63,6 +70,14 @@ public class DiscoveryTests
 	{
 		List<ServiceInstance> services = discoveryClient.getInstances(serviceId);
 		assertThat(services).hasAtLeastOneElementOfType(ServiceInstance.class);
+		validateServiceInstance(services.get(0));
 	}
 
+	private void validateServiceInstance(ServiceInstance serviceInstance)
+	{
+		assertThat(serviceInstance.getHost()).isNotEmpty();
+		assertThat(serviceInstance.getPort()).isNotZero();
+		assertThat(serviceInstance.getUri()).isNotNull();
+		assertThat(serviceInstance.getMetadata()).isNotEmpty();
+	}
 }
