@@ -26,6 +26,7 @@ apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
+apply plugin: 'maven-publish'
 
 sourceCompatibility = 1.8
 
@@ -60,4 +61,40 @@ dependencies {
     testCompile('org.springframework.boot:spring-boot-starter-test')
     testCompile('io.fabric8:kubernetes-server-mock')
     testCompile('org.assertj:assertj-core')
+}
+
+compileJava.dependsOn(processResources)
+
+task sourceJar(type: Jar) {
+    from sourceSets.main.allJava
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            def travisTag = System.env["TRAVIS_TAG"]
+            def travisBranch = System.env["TRAVIS_BRANCH"]
+            def snapshotVersion = (travisBranch != null ? (travisBranch.toUpperCase() + "-SNAPSHOT") : "SNAPSHOT")
+            def versionNumber = (travisTag != null ? travisTag : snapshotVersion)
+
+            groupId "com.dtforce"
+            artifactId "kubernetes-discovery-spring"
+            version(versionNumber)
+
+            from components.java
+
+            artifact sourceJar {
+                classifier 'sources'
+            }
+        }
+    }
+    repositories {
+        maven {
+            url System.env['MAVEN_REPO_URL'];
+            credentials {
+                username(System.env['MAVEN_USER'])
+                password(System.env['MAVEN_PASSWORD'])
+            }
+        }
+    }
 }
