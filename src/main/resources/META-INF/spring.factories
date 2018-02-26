@@ -1,0 +1,1 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=com.dtforce.spring.kubernetes.KubernetesDiscoveryConfiguration
