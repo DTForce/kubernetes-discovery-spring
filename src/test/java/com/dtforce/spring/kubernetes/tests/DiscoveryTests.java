@@ -74,6 +74,12 @@ public class DiscoveryTests
 		validateServiceInstance(services.get(0));
 	}
 
+	@Test
+	public void getInstancesForNonExistentService() {
+		List<ServiceInstance> services = discoveryClient.getInstances("noop");
+		assertThat(services).isEmpty();
+	}
+
 	private void validateServiceInstance(ServiceInstance serviceInstance)
 	{
 		assertThat(serviceInstance.getHost()).isNotEmpty();

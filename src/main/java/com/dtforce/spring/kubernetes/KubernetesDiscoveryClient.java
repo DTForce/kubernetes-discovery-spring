@@ -51,6 +51,10 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 			return Collections.emptyList();
 		}
 
+		if (service == null) {
+			return Collections.emptyList();
+		}
+
 		// TODO: support multiple ports
 		ServicePort svcPort = service.getSpec().getPorts().get(0);
 		if (svcPort == null) {
