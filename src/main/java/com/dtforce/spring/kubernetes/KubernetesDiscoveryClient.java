@@ -6,6 +6,8 @@ import io.fabric8.kubernetes.api.model.ServicePort;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cloud.client.DefaultServiceInstance;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
@@ -17,6 +19,8 @@ import java.util.List;
 public class KubernetesDiscoveryClient implements DiscoveryClient
 {
 	// TODO: namespace detection
+
+	private static Logger log = LoggerFactory.getLogger(KubernetesDiscoveryClient.class.getName());
 
 	private KubernetesClient kubeClient;
 
@@ -43,6 +47,7 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 		try {
 			service = kubeClient.services().withName(serviceId).get();
 		} catch(KubernetesClientException e) {
+			log.warn("getInstances: failed to retrieve service '"+serviceId+"': API call failed.");
 			return Collections.emptyList();
 		}
 
@@ -70,6 +75,7 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 		try {
 			serviceList = kubeClient.services().list();
 		} catch (KubernetesClientException e) {
+			log.warn("getServices: failed to retrieve the list of services: API call failed.");
 			return Collections.emptyList();
 		}
 
