@@ -19,7 +19,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-public class DiscoveryTests
+public class DiscoveryClientTests
 {
 
 	private final String serviceId = "dummy-service";
