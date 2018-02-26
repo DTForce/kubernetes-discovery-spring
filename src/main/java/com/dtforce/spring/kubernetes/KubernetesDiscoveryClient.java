@@ -24,11 +24,6 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 
 	private KubernetesClient kubeClient;
 
-	public KubernetesDiscoveryClient()
-	{
-		this(new DefaultKubernetesClient());
-	}
-
 	public KubernetesDiscoveryClient(KubernetesClient client)
 	{
 		kubeClient = client;
