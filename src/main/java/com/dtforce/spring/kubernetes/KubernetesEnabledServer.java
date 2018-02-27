@@ -12,9 +12,7 @@ public class KubernetesEnabledServer extends Server
 	public KubernetesEnabledServer(Service service)
 	{
 		super(
-			String.format("%s.%s",
-				service.getMetadata().getName(),
-				service.getMetadata().getNamespace()),
+			service.getSpec().getClusterIP(),
 			service.getSpec().getPorts().get(0).getPort()
 		);
 		this.kubeService = service;
