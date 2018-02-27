@@ -38,6 +38,8 @@ public class KubernetesServerList extends AbstractServerList<Server>
 	@Override
 	public List<Server> getUpdatedListOfServers()
 	{
+		log.debug("getUpdatedListOfServers: requesting services list...");
+
 		ServiceList serviceList;
 		try {
 			serviceList = kubeClient.services().list();
@@ -46,11 +48,16 @@ public class KubernetesServerList extends AbstractServerList<Server>
 			return Collections.emptyList();
 		}
 
+		log.debug("getUpdatedListOfServers: request success! serviceList = {}", serviceList.toString());
+
 		List<Server> servers = new ArrayList<>();
 		List<Service> items = serviceList.getItems();
 		for (Service service : items) {
 			servers.add(new KubernetesEnabledServer(service));
 		}
+
+		log.debug("getUpdatedListOfServers: updated servers list = {}", servers.toString());
+
 		return servers;
 	}
 

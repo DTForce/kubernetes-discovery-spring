@@ -8,6 +8,9 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
+import org.slf4j.helpers.BasicMarker;
 import org.springframework.cloud.client.DefaultServiceInstance;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
@@ -38,21 +41,29 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 	@Override
 	public List<ServiceInstance> getInstances(String serviceId)
 	{
+		log.debug("getInstances: requesting info for service with id '{}' ...", serviceId);
+
 		Service service;
 		try {
 			service = kubeClient.services().withName(serviceId).get();
 		} catch(KubernetesClientException e) {
-			log.warn("getInstances: failed to retrieve service '"+serviceId+"': API call failed.");
+			log.warn("getInstances: failed to retrieve service '{}': API call failed.", serviceId);
 			return Collections.emptyList();
 		}
 
+		log.debug("getInstances: request success!");
+
 		if (service == null) {
+			log.warn("getInstances: specified service '{}' doesn't exist", serviceId);
 			return Collections.emptyList();
 		}
+
+		log.debug("getInstances: service = {}", service.toString());
 
 		// TODO: support multiple ports
 		ServicePort svcPort = service.getSpec().getPorts().get(0);
 		if (svcPort == null) {
+			log.warn("getInstances: service '{}' has no ports", serviceId);
 			return Collections.emptyList();
 		}
 
@@ -70,6 +81,8 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 	@Override
 	public List<String> getServices()
 	{
+		log.debug("getServices: requesting list of services...");
+
 		ServiceList serviceList;
 		try {
 			serviceList = kubeClient.services().list();
@@ -77,6 +90,8 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 			log.warn("getServices: failed to retrieve the list of services: API call failed.");
 			return Collections.emptyList();
 		}
+
+		log.debug("getServices: request success! serviceList = {}", serviceList.toString());
 
 		List<String> serviceNames = new ArrayList<>();
 		List<Service> items = serviceList.getItems();
