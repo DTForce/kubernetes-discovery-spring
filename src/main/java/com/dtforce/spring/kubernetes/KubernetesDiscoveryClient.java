@@ -41,8 +41,6 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 	@Override
 	public List<ServiceInstance> getInstances(String serviceId)
 	{
-		log.debug("getInstances: requesting info for service with id '{}' ...", serviceId);
-
 		Service service;
 		try {
 			service = kubeClient.services().withName(serviceId).get();
@@ -50,8 +48,6 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 			log.warn("getInstances: failed to retrieve service '{}': API call failed.", serviceId);
 			return Collections.emptyList();
 		}
-
-		log.debug("getInstances: request success!");
 
 		if (service == null) {
 			log.warn("getInstances: specified service '{}' doesn't exist", serviceId);
@@ -81,8 +77,6 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 	@Override
 	public List<String> getServices()
 	{
-		log.debug("getServices: requesting list of services...");
-
 		ServiceList serviceList;
 		try {
 			serviceList = kubeClient.services().list();
@@ -90,9 +84,7 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 			log.warn("getServices: failed to retrieve the list of services: API call failed.");
 			return Collections.emptyList();
 		}
-
-		log.debug("getServices: request success! serviceList = {}", serviceList.toString());
-
+		
 		List<String> serviceNames = new ArrayList<>();
 		List<Service> items = serviceList.getItems();
 		for (Service svc : items) {

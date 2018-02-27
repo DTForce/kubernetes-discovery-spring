@@ -38,8 +38,6 @@ public class KubernetesServerList extends AbstractServerList<Server>
 	@Override
 	public List<Server> getUpdatedListOfServers()
 	{
-		log.debug("getUpdatedListOfServers: requesting services list...");
-
 		ServiceList serviceList;
 		try {
 			serviceList = kubeClient.services().list();
@@ -47,8 +45,6 @@ public class KubernetesServerList extends AbstractServerList<Server>
 			log.warn("getUpdatedListOfServers: unable to get a list of services: API call failed.");
 			return Collections.emptyList();
 		}
-
-		log.debug("getUpdatedListOfServers: request success! serviceList = {}", serviceList.toString());
 
 		List<Server> servers = new ArrayList<>();
 		List<Service> items = serviceList.getItems();
