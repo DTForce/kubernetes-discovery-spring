@@ -58,6 +58,7 @@ public class KubernetesEnabledServer extends Server
 	@Override
 	public String toString()
 	{
-		return String.format("%s -> %s", this.getMetaInfo().getServiceIdForDiscovery(), this.getId());
+		return String.format("%s -> %s:%d", this.getMetaInfo().getServiceIdForDiscovery(),
+			this.getHost(), this.getPort());
 	}
 }
