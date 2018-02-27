@@ -34,8 +34,4 @@ public class KubernetesDiscoveryConfiguration
 		return new KubernetesServerList(kubernetesClient());
 	}
 
-	public ServerList<Server> test()
-	{
-		return new KubernetesServerList(null);
-	}
 }
