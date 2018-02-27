@@ -2,11 +2,8 @@ package com.dtforce.spring.kubernetes;
 
 import com.netflix.client.config.IClientConfig;
 import com.netflix.loadbalancer.AbstractServerList;
-import com.netflix.loadbalancer.BaseLoadBalancer;
 import com.netflix.loadbalancer.Server;
 import io.fabric8.kubernetes.api.model.Service;
-import io.fabric8.kubernetes.api.model.ServiceList;
-import io.fabric8.kubernetes.api.model.ServicePort;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import org.slf4j.Logger;
@@ -38,28 +35,28 @@ public class KubernetesServerList extends AbstractServerList<Server>
 	@Override
 	public List<Server> getUpdatedListOfServers()
 	{
-		ServiceList serviceList;
+		if (serviceId == null) {
+			log.error("getUpdatedListOfServers: serviceId is null.");
+			return Collections.emptyList();
+		}
+
+		Service service;
 		try {
-			serviceList = kubeClient.services().list();
+			service = kubeClient.services().withName(serviceId).get();
 		} catch(KubernetesClientException e) {
-			log.warn("getUpdatedListOfServers: unable to get a list of services: API call failed.");
+			log.warn("getUpdatedListOfServers: unable to get service '{}': API call failed.", serviceId);
 			return Collections.emptyList();
 		}
 
 		List<Server> servers = new ArrayList<>();
-		List<Service> items = serviceList.getItems();
-		for (Service service : items) {
-			servers.add(new KubernetesEnabledServer(service));
-		}
-
+		servers.add(new KubernetesEnabledServer(service));
 		log.debug("getUpdatedListOfServers: updated servers list = {}", servers.toString());
-
 		return servers;
 	}
 
 	@Override
 	public void initWithNiwsConfig(IClientConfig clientConfig)
 	{
-		// No-op
+		serviceId = clientConfig.getClientName();
 	}
 }

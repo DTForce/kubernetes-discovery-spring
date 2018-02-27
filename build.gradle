@@ -43,6 +43,7 @@ dependencyManagement {
         dependency 'io.fabric8:kubernetes-client:3.1.8'
         dependency 'io.fabric8:kubernetes-server-mock:3.1.8'
         dependency 'org.assertj:assertj-core:3.9.0'
+        dependency 'org.springframework.cloud:spring-cloud-netflix-core:2.0.0.M6'
     }
 }
 
@@ -52,6 +53,7 @@ dependencies {
     compile('org.springframework:spring-context')
     compile('org.springframework.cloud:spring-cloud-commons')
     compile('com.netflix.ribbon:ribbon-loadbalancer')
+    compile('org.springframework.cloud:spring-cloud-netflix-core')
 
     // Kubernetes Client
     compile('io.fabric8:kubernetes-client')

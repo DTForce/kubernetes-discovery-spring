@@ -1,8 +1,5 @@
 package com.dtforce.spring.kubernetes;
 
-import com.netflix.loadbalancer.ConfigurationBasedServerList;
-import com.netflix.loadbalancer.Server;
-import com.netflix.loadbalancer.ServerList;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -11,10 +8,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class KubernetesDiscoveryConfiguration
+public class KubernetesDiscoveryAutoConfiguration
 {
 
 	@Bean
+	@ConditionalOnMissingBean
 	public KubernetesClient kubernetesClient()
 	{
 		return new DefaultKubernetesClient();
@@ -25,13 +23,6 @@ public class KubernetesDiscoveryConfiguration
 	public KubernetesDiscoveryClient kubernetesDiscoveryClient()
 	{
 		return new KubernetesDiscoveryClient(kubernetesClient());
-	}
-
-	@Bean
-	@ConditionalOnProperty(name = "spring.kubernetes.ribbon.enabled", matchIfMissing = true)
-	public KubernetesServerList kubernetesServerList()
-	{
-		return new KubernetesServerList(kubernetesClient());
 	}
 
 }

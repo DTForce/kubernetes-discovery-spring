@@ -3,14 +3,10 @@ package com.dtforce.spring.kubernetes;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceList;
 import io.fabric8.kubernetes.api.model.ServicePort;
-import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.Marker;
-import org.slf4j.MarkerFactory;
-import org.slf4j.helpers.BasicMarker;
 import org.springframework.cloud.client.DefaultServiceInstance;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
@@ -84,7 +80,7 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 			log.warn("getServices: failed to retrieve the list of services: API call failed.");
 			return Collections.emptyList();
 		}
-		
+
 		List<String> serviceNames = new ArrayList<>();
 		List<Service> items = serviceList.getItems();
 		for (Service svc : items) {
