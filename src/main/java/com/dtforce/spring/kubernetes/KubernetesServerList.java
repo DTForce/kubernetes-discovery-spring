@@ -3,11 +3,9 @@ package com.dtforce.spring.kubernetes;
 import com.netflix.client.config.IClientConfig;
 import com.netflix.loadbalancer.AbstractServerList;
 import com.netflix.loadbalancer.Server;
-import io.fabric8.kubernetes.api.model.Service;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.KubernetesClientException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cloud.client.ServiceInstance;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,11 +17,11 @@ public class KubernetesServerList extends AbstractServerList<Server>
 
 	private String serviceId;
 
-	private KubernetesClient kubeClient;
+	private KubernetesDiscoveryClient discoveryClient;
 
-	public KubernetesServerList(KubernetesClient client)
+	public KubernetesServerList(KubernetesDiscoveryClient client)
 	{
-		kubeClient = client;
+		discoveryClient = client;
 	}
 
 	@Override
@@ -40,16 +38,11 @@ public class KubernetesServerList extends AbstractServerList<Server>
 			return Collections.emptyList();
 		}
 
-		Service service;
-		try {
-			service = kubeClient.services().withName(serviceId).get();
-		} catch(KubernetesClientException e) {
-			log.warn("getUpdatedListOfServers: unable to get service '{}': API call failed.", serviceId);
-			return Collections.emptyList();
-		}
-
 		List<Server> servers = new ArrayList<>();
-		servers.add(new KubernetesEnabledServer(service));
+		List<ServiceInstance> serviceInstances = discoveryClient.getInstances(serviceId);
+		for (ServiceInstance serviceInstance : serviceInstances) {
+			servers.add(new ServiceInstanceServer(serviceInstance));
+		}
 		log.debug("getUpdatedListOfServers: updated servers list = {}", servers.toString());
 		return servers;
 	}

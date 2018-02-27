@@ -10,9 +10,10 @@ public class KubernetesRibbonConfiguration
 {
 
 	@Bean
-	public KubernetesServerList kubernetesServerList(KubernetesClient kubernetesClient, IClientConfig clientConfig)
+	public KubernetesServerList kubernetesServerList(
+		KubernetesDiscoveryClient kubernetesDiscoveryClient, IClientConfig clientConfig)
 	{
-		KubernetesServerList serverList = new KubernetesServerList(kubernetesClient);
+		KubernetesServerList serverList = new KubernetesServerList(kubernetesDiscoveryClient);
 		serverList.initWithNiwsConfig(clientConfig);
 		return serverList;
 	}
