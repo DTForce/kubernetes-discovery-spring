@@ -1,7 +1,6 @@
 package com.dtforce.spring.kubernetes;
 
 import com.netflix.client.config.IClientConfig;
-import io.fabric8.kubernetes.client.KubernetesClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -10,10 +9,10 @@ public class KubernetesRibbonConfiguration
 {
 
 	@Bean
-	public KubernetesServerList kubernetesServerList(
+	public DiscoveryClientServerList kubernetesServerList(
 		KubernetesDiscoveryClient kubernetesDiscoveryClient, IClientConfig clientConfig)
 	{
-		KubernetesServerList serverList = new KubernetesServerList(kubernetesDiscoveryClient);
+		DiscoveryClientServerList serverList = new DiscoveryClientServerList(kubernetesDiscoveryClient);
 		serverList.initWithNiwsConfig(clientConfig);
 		return serverList;
 	}

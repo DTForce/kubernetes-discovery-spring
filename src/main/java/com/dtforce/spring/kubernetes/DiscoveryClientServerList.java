@@ -6,20 +6,21 @@ import com.netflix.loadbalancer.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cloud.client.ServiceInstance;
+import org.springframework.cloud.client.discovery.DiscoveryClient;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class KubernetesServerList extends AbstractServerList<Server>
+public class DiscoveryClientServerList extends AbstractServerList<Server>
 {
-	private static Logger log = LoggerFactory.getLogger(KubernetesServerList.class.getName());
+	private static Logger log = LoggerFactory.getLogger(DiscoveryClientServerList.class.getName());
 
 	private String serviceId;
 
-	private KubernetesDiscoveryClient discoveryClient;
+	private DiscoveryClient discoveryClient;
 
-	public KubernetesServerList(KubernetesDiscoveryClient client)
+	public DiscoveryClientServerList(DiscoveryClient client)
 	{
 		discoveryClient = client;
 	}
