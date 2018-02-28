@@ -17,8 +17,6 @@ import java.util.List;
 
 public class KubernetesDiscoveryClient implements DiscoveryClient
 {
-	// TODO: namespace detection
-
 	private static Logger log = LoggerFactory.getLogger(KubernetesDiscoveryClient.class.getName());
 
 	private KubernetesClient kubeClient;
@@ -39,6 +37,7 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 	{
 		Service service;
 		try {
+			// API calls are automatically namespaced to the client's assigned namespace.
 			service = kubeClient.services().withName(serviceId).get();
 		} catch(KubernetesClientException e) {
 			log.warn("getInstances: failed to retrieve service '{}': API call failed.", serviceId);
