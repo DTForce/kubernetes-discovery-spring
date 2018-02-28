@@ -7,9 +7,11 @@ jdk: openjdk8
 jobs:
   include:
     - stage: build
+      install: true # Skip gradle assemble
       script: gradle build -x test
 
     - stage: test
+      install: true # Same as in build
       script: gradle check
 
     - stage: publish
@@ -22,6 +24,8 @@ jobs:
         - openssl aes-256-cbc -K $encrypted_23c9d51bee08_key -iv $encrypted_23c9d51bee08_iv -in ci/ci-secrets.tar.enc -out ci/ci-secrets.tar -d
         - tar xvf ci/ci-secrets.tar -C ./ci
         - mv ci/ci-signing.gradle.properties ./gradle.properties
+      install:
+        - true # Same as above
       script:
         - gradle uploadArchives
 
