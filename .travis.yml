@@ -8,11 +8,11 @@ jobs:
   include:
     - stage: build
       install: true # Skip gradle assemble
-      script: gradle build -x test
+      script: gradle build -x test -x signArchives
 
     - stage: test
       install: true # Same as in build
-      script: gradle check
+      script: gradle check -x signArchives
 
     - stage: publish
       if: tag IS present
