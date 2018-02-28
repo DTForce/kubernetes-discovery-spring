@@ -26,7 +26,15 @@ apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
-apply plugin: 'maven-publish'
+apply plugin: 'maven'
+
+group "com.dtforce"
+def artifactIdentifier = "kubernetes-discovery-spring"
+
+def travisTag = System.env["TRAVIS_TAG"]
+def travisBranch = System.env["TRAVIS_BRANCH"]
+def snapshotVersion = (travisBranch != null ? (travisBranch.toUpperCase() + "-SNAPSHOT") : "SNAPSHOT")
+version = (travisTag != null ? travisTag : snapshotVersion)
 
 sourceCompatibility = 1.8
 
@@ -70,34 +78,54 @@ dependencies {
 compileJava.dependsOn(processResources)
 
 task sourceJar(type: Jar) {
+    classifier 'sources'
     from sourceSets.main.allJava
 }
 
-publishing {
-    publications {
-        maven(MavenPublication) {
-            def travisTag = System.env["TRAVIS_TAG"]
-            def travisBranch = System.env["TRAVIS_BRANCH"]
-            def snapshotVersion = (travisBranch != null ? (travisBranch.toUpperCase() + "-SNAPSHOT") : "SNAPSHOT")
-            def versionNumber = (travisTag != null ? travisTag : snapshotVersion)
+task javadocJar(type: Jar) {
+    classifier 'javadoc'
+    from javadoc
+}
 
-            groupId "com.dtforce"
-            artifactId "kubernetes-discovery-spring"
-            version(versionNumber)
+artifacts {
+    archives sourceJar, javadocJar
+}
 
-            from components.java
-
-            artifact sourceJar {
-                classifier 'sources'
-            }
-        }
-    }
+uploadArchives {
     repositories {
-        maven {
-            url System.env['MAVEN_REPO_URL'];
-            credentials {
-                username(System.env['MAVEN_USER'])
-                password(System.env['MAVEN_PASSWORD'])
+        mavenDeployer {
+            repository(url: System.env['MAVEN_REPO_URL']) {
+                authentication(
+                        userName: System.env['MAVEN_USER'],
+                        password: System.env['MAVEN_PASSWORD']
+                )
+            }
+
+            pom.artifactId = artifactIdentifier
+            pom.project {
+                name artifactIdentifier
+                packaging 'jar'
+                description 'Kubernetes Service Discovery for Spring Cloud and Ribbon'
+                url 'https://github.com/DTForce/kubernetes-discovery-spring'
+
+                scm {
+                    url 'https://github.com/DTForce/kubernetes-discovery-spring'
+                }
+
+                licenses {
+                    license {
+                        name 'Apache License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'stephane.lepin'
+                        name 'Stéphane Lepin'
+                        email 'stephane.lepin@dtforce.com'
+                    }
+                }
             }
         }
     }
