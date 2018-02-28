@@ -7,9 +7,23 @@ jdk: openjdk8
 jobs:
   include:
     - stage: build
-      script: gradle build -x test --no-daemon
+      script: gradle build -x test
+
     - stage: test
-      script: gradle build --no-daemon
+      script: gradle check
+
+    - stage: publish
+      if: tag IS present
+      env:
+        - MAVEN_REPO_URL="https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+        - secure: "pbZHDPhhxQS/SlEOCcm0j2In0UiX8GKHxemIxGNAMi8bGZVWBG6ymDHaalqs5V2mD6kpAEBke3coT9fX8bowzSYgqU/nfZs7EQvOim2jQ85TUXApzppA2lulLmCrHZckts9eCNEZm0O4Lh3NRyQrdSbPtv2qNfvODwHZlry1qRPemttev0ONpxOdrTYKs/R6VRE36GRuZkQASh2HTu3hqIvuKsCjOhnMwt3+kMTpEo0j5s97aXYOvayahijP7ZpZr2LxYD5mrueNgorsC9EBUJT3q7mb6YnOgbYSUOpbFedSlA6KhhhpqH6ozXQcqWxkSz0zmHcouyJBYJLboKI0MMZoGb4L2hZnKVT7E3+axm7FrXgVxjeu79ppdX4MuhMnZo5ajnQLHxpaOs0AY/AlHfSyjOwamy21JZNdwiT8oabWO8N80fe8W7irQYYVguQtYMcJs1RiJJe0SVj17fHtjowZWYSkOFqcwcPXOqgNMsX5b2T5Wxmdfi5/ex11ceqliVrF734iT32FuBPxAaK8CKDHFcX3+LTNN66e0DroKTF3wu0z6Mv+gcbcmUaBr0ZUcC+y9x1cyNDT72OOLhNY5wyXxyAj/4IKEwI9bHnVP9BsW7uCOsWTv9KuYrj2flRMxKiqFpLBnEIdNbRhhXaq2USXIH1G1wEIm75kwqIKW/Y="
+        - secure: "Pgap0bcD1vQgsryt6tRIYRZi/9qvXbA9GBWVGqXrq3NHtZbv0TAKgSvIEYSk3yljfHx6NzWJOl9UJOW/x/z+pIG/IoSJj+ETgoMtynBMtmDABrKtGrR+MMG8ridc8br1pvmGu09E4ylk0M9BtatDy3RpZ2B/1hLaMFRAoHKX9Vbz9bI7YaZnVTOynjylMdbWoDL+iURptQ9FdGhQwuPlY1w+R+H0vFIfOjc5rTPAEAeLfHeVjWlCcQkHKbdkJNc2GgTu0PnW6X7g9I5kVPfXNMoY1sAgvlamRm+Dju3njcMzbHoqPWCC9JtQmqtA7COiXIwIo1ZOncwDB6Hil3f6BfQrYLXcFBUwyQaf/RBlD9VBzmzrsaDhbF1nXfSaOZS3mV9YWjAiJ+BVUFVIuQsOJ+aJmkZqZCEmVV2jCeMFsL+6251pt3mfoZbz6HdrqsXvTMpteNXgm1LTFo2AKGMba4KZpzZQqOOlPlj1JsIohZbG2YKGlIruQ76l9n/RAsn0o9o613OHtfKW2Fzp5H9KKWX1Wm2HNGWBYa0Ofap651feJJVWAGI+uSVTK/7v75UVbJn6tLYv8ZR/+Iuc0xRDQayWeFbUdahunDFH9uk6KDX32jGWrICY9d9Y/9i3anSc9oY/Fy0Rh0Tcr0VXYo54eS2T/9ISCYyqYQ9h2TM11oo="
+      before_install:
+        - openssl aes-256-cbc -K $encrypted_23c9d51bee08_key -iv $encrypted_23c9d51bee08_iv -in ci/ci-secrets.tar.enc -out ci/ci-secrets.tar -d
+        - tar xvf ci/ci-secrets.tar -C ./ci
+        - mv ci/ci-signing.gradle.properties ./gradle.properties
+      script:
+        - gradle uploadArchives
 
 cache:
   directories:

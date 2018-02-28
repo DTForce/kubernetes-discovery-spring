@@ -7,3 +7,6 @@ build/
 /gradlew.bat
 version.txt
 gradle.properties
+ci/ci-signing.gradle.properties
+ci/gpg-ci.asc
+ci/ci-secrets.tar

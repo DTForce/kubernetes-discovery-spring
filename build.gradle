@@ -27,6 +27,7 @@ apply plugin: 'idea'
 apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
 apply plugin: 'maven'
+apply plugin: 'signing'
 
 group "com.dtforce"
 def artifactIdentifier = "kubernetes-discovery-spring"
@@ -91,9 +92,17 @@ artifacts {
     archives sourceJar, javadocJar
 }
 
+signing {
+    sign configurations.archives
+}
+
 uploadArchives {
     repositories {
         mavenDeployer {
+            beforeDeployment {
+                MavenDeployment deployment -> signing.signPom(deployment)
+            }
+
             repository(url: System.env['MAVEN_REPO_URL']) {
                 authentication(
                         userName: System.env['MAVEN_USER'],
