@@ -6,4 +6,4 @@ build/
 /gradlew
 /gradlew.bat
 version.txt
-
+gradle.properties
