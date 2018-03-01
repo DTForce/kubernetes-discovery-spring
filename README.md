@@ -59,7 +59,7 @@ repositories {
 Because `kubernetes-discovery-spring` uses the great `kubernetes-client` library
 from fabric8.io, when running in a Pod no special configuration is needed to
 establish communications with Kubernetes' API. A default Service Account token and CA are
-automatically mounted as files in containers spawned in Kubernetes.
+automatically mounted as files in K8S containers and picked up by `kubernetes-client`.
 
 It can also get API credentials from `kubectl` configuration files, Spring config properties and environment variables.
 See the official documentation of `kubernetes-client` here for more details: https://github.com/fabric8io/kubernetes-client
