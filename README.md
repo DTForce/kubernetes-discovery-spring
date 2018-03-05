@@ -24,7 +24,7 @@ with the Kubernetes cluster.
     <dependency>
         <groupId>com.dtforce</groupId>
         <artifactId>kubernetes-discovery-spring</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.2</version>
     </dependency>
 </dependencies>
 <repositories>
@@ -43,7 +43,7 @@ with the Kubernetes cluster.
 
 ```groovy
 dependencies {
-    compile 'com.dtforce:kubernetes-discovery-spring:1.0.0'
+    compile 'com.dtforce:kubernetes-discovery-spring:1.0.2'
 }
 repositories {
     maven {
