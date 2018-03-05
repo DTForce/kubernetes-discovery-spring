@@ -40,7 +40,7 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 			// API calls are automatically namespaced to the client's assigned namespace.
 			service = kubeClient.services().withName(serviceId).get();
 		} catch(KubernetesClientException e) {
-			log.warn("getInstances: failed to retrieve service '{}': API call failed.", serviceId);
+			log.warn("getInstances: failed to retrieve service '{}': API call failed: {}", serviceId, e.getMessage());
 			return Collections.emptyList();
 		}
 
@@ -76,7 +76,7 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 		try {
 			serviceList = kubeClient.services().list();
 		} catch (KubernetesClientException e) {
-			log.warn("getServices: failed to retrieve the list of services: API call failed.");
+			log.warn("getServices: failed to retrieve the list of services: API call failed: {}", e.getMessage());
 			return Collections.emptyList();
 		}
 
