@@ -51,12 +51,16 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 
 		log.debug("getInstances: service = {}", service.toString());
 
-		// TODO: support multiple ports
-		ServicePort svcPort = service.getSpec().getPorts().get(0);
-		if (svcPort == null) {
-			log.warn("getInstances: service '{}' has no ports", serviceId);
+		if (service.getSpec().getPorts().isEmpty()) {
+			log.error("getInstances: service '{}' has no ports", serviceId);
 			return Collections.emptyList();
 		}
+		if (service.getSpec().getPorts().size() > 1) {
+			// TODO: support multiple ports
+			log.warn("getInstances: service '{}' has multiple ports", serviceId);
+		}
+
+		ServicePort svcPort = service.getSpec().getPorts().get(0);
 
 		List<ServiceInstance> serviceInstances = new ArrayList<>();
 		serviceInstances.add(new DefaultServiceInstance(

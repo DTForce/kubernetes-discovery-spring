@@ -44,7 +44,9 @@ public class DiscoveryClientServerList extends AbstractServerList<Server>
 		for (ServiceInstance serviceInstance : serviceInstances) {
 			servers.add(new ServiceInstanceServer(serviceInstance));
 		}
-		log.debug("getUpdatedListOfServers: updated servers list = {}", servers.toString());
+		if (log.isDebugEnabled()) {
+			log.debug("getUpdatedListOfServers: updated servers list = {}", servers.toString());
+		}
 		return servers;
 	}
 
