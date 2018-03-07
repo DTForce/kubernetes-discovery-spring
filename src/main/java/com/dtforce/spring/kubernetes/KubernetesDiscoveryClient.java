@@ -41,6 +41,7 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 		try {
 			// API calls are automatically namespaced to the client's assigned namespace.
 			service = kubeClient.services().withName(serviceId).get();
+
 		} catch(KubernetesClientException e) {
 			log.warn("getInstances: failed to retrieve service '{}': API call failed: {}", serviceId, e.getMessage());
 			return Collections.emptyList();
@@ -64,7 +65,8 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 		ServicePort svcPort = svcPort = servicePorts.get(0); // By default, use the first port available
 
 		// But if a port named "http" is available, use it instead
-		Optional<ServicePort> httpPort = servicePorts.stream().filter(s -> s.getName().equals("http")).findFirst();
+		Optional<ServicePort> httpPort = servicePorts.stream()
+			.filter(s -> s.getName() != null && s.getName().equals("http")).findFirst();
 		if (httpPort.isPresent()) {
 			svcPort = httpPort.get();
 		}
