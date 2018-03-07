@@ -68,7 +68,7 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 			service.getSpec().getClusterIP(),
 			svcPort.getPort(),
 			false,
-			service.getMetadata().getAnnotations()
+			service.getMetadata().getLabels()
 		));
 		return serviceInstances;
 	}
