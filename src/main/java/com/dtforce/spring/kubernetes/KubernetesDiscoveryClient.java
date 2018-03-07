@@ -10,10 +10,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.cloud.client.DefaultServiceInstance;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
+import org.springframework.util.Assert;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 public class KubernetesDiscoveryClient implements DiscoveryClient
 {
@@ -49,18 +51,23 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 			return Collections.emptyList();
 		}
 
-		log.debug("getInstances: service = {}", service.toString());
+		if (log.isDebugEnabled()) {
+			log.debug("getInstances: service = {}", service.toString());
+		}
 
 		if (service.getSpec().getPorts().isEmpty()) {
 			log.error("getInstances: service '{}' has no ports", serviceId);
 			return Collections.emptyList();
 		}
-		if (service.getSpec().getPorts().size() > 1) {
-			// TODO: support multiple ports
-			log.warn("getInstances: service '{}' has multiple ports", serviceId);
-		}
 
-		ServicePort svcPort = service.getSpec().getPorts().get(0);
+		List<ServicePort> servicePorts = service.getSpec().getPorts();
+		ServicePort svcPort = svcPort = servicePorts.get(0); // By default, use the first port available
+
+		// But if a port named "http" is available, use it instead
+		Optional<ServicePort> httpPort = servicePorts.stream().filter(s -> s.getName().equals("http")).findFirst();
+		if (httpPort.isPresent()) {
+			svcPort = httpPort.get();
+		}
 
 		List<ServiceInstance> serviceInstances = new ArrayList<>();
 		serviceInstances.add(new DefaultServiceInstance(
