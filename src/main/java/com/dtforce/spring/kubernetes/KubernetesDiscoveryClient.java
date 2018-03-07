@@ -1,8 +1,6 @@
 package com.dtforce.spring.kubernetes;
 
-import io.fabric8.kubernetes.api.model.Service;
-import io.fabric8.kubernetes.api.model.ServiceList;
-import io.fabric8.kubernetes.api.model.ServicePort;
+import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import org.slf4j.Logger;
@@ -41,7 +39,6 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 		try {
 			// API calls are automatically namespaced to the client's assigned namespace.
 			service = kubeClient.services().withName(serviceId).get();
-
 		} catch(KubernetesClientException e) {
 			log.warn("getInstances: failed to retrieve service '{}': API call failed: {}", serviceId, e.getMessage());
 			return Collections.emptyList();
@@ -62,7 +59,7 @@ public class KubernetesDiscoveryClient implements DiscoveryClient
 		}
 
 		List<ServicePort> servicePorts = service.getSpec().getPorts();
-		ServicePort svcPort = svcPort = servicePorts.get(0); // By default, use the first port available
+		ServicePort svcPort = servicePorts.get(0); // By default, use the first port available
 
 		// But if a port named "http" is available, use it instead
 		Optional<ServicePort> httpPort = servicePorts.stream()
