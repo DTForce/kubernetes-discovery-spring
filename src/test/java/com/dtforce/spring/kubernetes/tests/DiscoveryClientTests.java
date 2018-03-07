@@ -39,14 +39,14 @@ public class DiscoveryClientTests
 
 		assertThat(discoveryClient.getServices()).isEmpty();
 
-		Map<String, String> svcAnnotations = new HashMap<>();
-		svcAnnotations.put("beta.kubernetes.io/arch", "amd64");
-		svcAnnotations.put("beta.kubernetes.io/os", "linux");
+		Map<String, String> svcLabels = new HashMap<>();
+		svcLabels.put("beta.kubernetes.io/arch", "amd64");
+		svcLabels.put("beta.kubernetes.io/os", "linux");
 
 		Service svc = new ServiceBuilder()
 			.withNewMetadata()
 				.withName(serviceId)
-				.withAnnotations(svcAnnotations)
+				.withLabels(svcLabels)
 			.and()
 			.withNewSpec()
 				.withType("ClusterIP")
