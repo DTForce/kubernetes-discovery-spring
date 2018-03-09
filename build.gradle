@@ -29,10 +29,18 @@ apply plugin: 'signing'
 group "com.dtforce"
 def artifactIdentifier = "kubernetes-discovery-spring"
 
-def travisTag = System.env["TRAVIS_TAG"]
-def travisBranch = System.env["TRAVIS_BRANCH"]
-def snapshotVersion = (travisBranch != null ? (travisBranch.toUpperCase() + "-SNAPSHOT") : "SNAPSHOT")
-version = (travisTag != null ? travisTag : snapshotVersion)
+// Thanks https://stackoverflow.com/a/35041457
+def getGitRef = { ->
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        commandLine 'git', 'symbolic-ref', '--short', 'HEAD'
+        standardOutput = stdout
+    }
+    return stdout.toString().trim()
+}
+
+def versionFromEnv = System.env["BUILD_VERSION"]
+version = (versionFromEnv != null ? versionFromEnv : "${getGitRef}-SNAPSHOT")
 
 sourceCompatibility = 1.8
 
@@ -45,11 +53,11 @@ dependencyManagement {
         dependency 'org.springframework.boot:spring-boot-autoconfigure:2.0.0.RELEASE'
         dependency 'org.springframework:spring-context:5.0.3.RELEASE'
         dependency 'org.springframework.cloud:spring-cloud-commons:2.0.0.M6'
+        dependency 'org.springframework.cloud:spring-cloud-netflix-core:2.0.0.M6'
         dependency 'com.netflix.ribbon:ribbon-loadbalancer:2.2.4'
         dependency 'io.fabric8:kubernetes-client:3.1.8'
         dependency 'io.fabric8:kubernetes-server-mock:3.1.8'
         dependency 'org.assertj:assertj-core:3.9.0'
-        dependency 'org.springframework.cloud:spring-cloud-netflix-core:2.0.0.M6'
     }
 }
 
@@ -58,8 +66,8 @@ dependencies {
     compile('org.springframework.boot:spring-boot-autoconfigure')
     compile('org.springframework:spring-context')
     compile('org.springframework.cloud:spring-cloud-commons')
-    compile('com.netflix.ribbon:ribbon-loadbalancer')
     compile('org.springframework.cloud:spring-cloud-netflix-core')
+    compile('com.netflix.ribbon:ribbon-loadbalancer')
 
     // Kubernetes Client
     compile('io.fabric8:kubernetes-client')

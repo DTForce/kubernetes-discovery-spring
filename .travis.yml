@@ -30,6 +30,7 @@ jobs:
     - stage: publish
       if: tag IS present
       env:
+        - BUILD_VERSION="$TRAVIS_TAG"
         - MAVEN_REPO_URL="https://oss.sonatype.org/service/local/staging/deploy/maven2/"
       before_install:
         - openssl aes-256-cbc -K $encrypted_23c9d51bee08_key -iv $encrypted_23c9d51bee08_iv -in ci/ci-secrets.tar.enc -out ci/ci-secrets.tar -d
