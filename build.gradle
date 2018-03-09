@@ -33,7 +33,7 @@ def artifactIdentifier = "kubernetes-discovery-spring"
 def getGitRef = { ->
     def stdout = new ByteArrayOutputStream()
     exec {
-        commandLine 'git', 'symbolic-ref', '--short', 'HEAD'
+        commandLine 'git', 'rev-parse', '--abbrev-ref', 'HEAD'
         standardOutput = stdout
     }
     return stdout.toString().trim()
