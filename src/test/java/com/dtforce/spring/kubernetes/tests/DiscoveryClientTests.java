@@ -1,8 +1,6 @@
 package com.dtforce.spring.kubernetes.tests;
 
 import com.dtforce.spring.kubernetes.KubernetesDiscoveryClient;
-import io.fabric8.kubernetes.api.model.Service;
-import io.fabric8.kubernetes.api.model.ServiceBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.KubernetesServer;
 import org.junit.Before;
@@ -12,6 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 
+import javax.xml.ws.Service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +22,8 @@ public class DiscoveryClientTests
 {
 
 	private final String serviceId = "dummy-service";
+
+	private final String multiPortServiceId = "multiport-service";
 
 	@Rule
 	public KubernetesServer server = new KubernetesServer(true, true);
@@ -43,9 +44,10 @@ public class DiscoveryClientTests
 		svcLabels.put("beta.kubernetes.io/arch", "amd64");
 		svcLabels.put("beta.kubernetes.io/os", "linux");
 
-		Service svc = new ServiceBuilder()
+		kube.services().createNew()
 			.withNewMetadata()
 				.withName(serviceId)
+				.withNamespace(kube.getNamespace())
 				.withLabels(svcLabels)
 			.and()
 			.withNewSpec()
@@ -55,8 +57,25 @@ public class DiscoveryClientTests
 					.withPort(80).withProtocol("TCP")
 					.endPort()
 			.and()
-			.build();
-		kube.services().create(svc);
+			.done();
+
+		kube.services().createNew()
+			.withNewMetadata()
+				.withName(multiPortServiceId)
+				.withNamespace(kube.getNamespace())
+				.withLabels(svcLabels)
+			.and()
+			.withNewSpec()
+				.withType("ClusterIP")
+				.withClusterIP("192.168.1.120")
+				.addNewPort()
+					.withPort(80).withProtocol("TCP")
+					.endPort()
+				.addNewPort()
+					.withPort(8080).withProtocol("TCP").withName("http")
+					.endPort()
+			.and()
+			.done();
 	}
 
 	@Test
@@ -69,15 +88,25 @@ public class DiscoveryClientTests
 	@Test
 	public void getInstancesForSpecifiedService()
 	{
-		List<ServiceInstance> services = discoveryClient.getInstances(serviceId);
-		assertThat(services).hasAtLeastOneElementOfType(ServiceInstance.class);
-		validateServiceInstance(services.get(0));
+		List<ServiceInstance> instances = discoveryClient.getInstances(serviceId);
+		assertThat(instances).hasAtLeastOneElementOfType(ServiceInstance.class);
+		validateServiceInstance(instances.get(0));
 	}
 
 	@Test
-	public void getInstancesForNonExistentService() {
-		List<ServiceInstance> services = discoveryClient.getInstances("noop");
-		assertThat(services).isEmpty();
+	public void getInstancesForNonExistentService()
+	{
+		List<ServiceInstance> instances = discoveryClient.getInstances("noop");
+		assertThat(instances).isEmpty();
+	}
+
+	@Test
+	public void getHttpInstanceForMultiPortService() {
+		List<ServiceInstance> instances = discoveryClient.getInstances(multiPortServiceId);
+		assertThat(instances).hasSize(1);
+		validateServiceInstance(instances.get(0));
+
+		assertThat(instances.get(0).getPort()).isEqualTo(8080);
 	}
 
 	private void validateServiceInstance(ServiceInstance serviceInstance)
