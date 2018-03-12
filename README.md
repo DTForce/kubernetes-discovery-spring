@@ -80,4 +80,4 @@ See the official documentation of `kubernetes-client` here for more details: htt
 
 ## License
 
-This code is licensed under the [Apache License 2.0]().
+This code is licensed under the [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt).
