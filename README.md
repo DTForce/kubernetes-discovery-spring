@@ -52,6 +52,15 @@ repositories {
 }
 ```
 
+## Label-based filtering
+
+Since version 1.1.0, the Kubernetes Discovery Client implements `SelectorEnabledDiscoveryClient`, a new interface of
+our own making. This interface, a subset of the vanilla `DiscoveryClient`, allows developers to go beyong traditional
+name-based instance discovery by providing methods to get instances based on their metadata.
+
+In `kubernetes-discovery-spring`, the selector-enabled Discovery Client implementation filters services
+by equality-based Label matching. The interface methods can be provided with labels to match and labels to not match.
+
 ## Configuration
 
 ### Kubernetes API credentials
