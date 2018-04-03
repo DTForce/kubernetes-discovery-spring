@@ -7,7 +7,7 @@ Kubernetes Service Discovery for Spring Cloud and Ribbon
 ## Overview
 
 This library provides implementations of Spring Cloud's `DiscoveryClient` class and
-Ribbon's `ServerList`. It is compatible with Spring Cloud 2.0 and above, and is meant
+Ribbon's `ServerList`. It is compatible with Spring Cloud Finchley and is meant
 to be a very thin integration layer between Kubernetes and Spring Cloud + Ribbon.
 
 Under the hood, it makes use of fabric8's `kubernetes-client` Java library to communicate
