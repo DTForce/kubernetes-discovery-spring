@@ -25,7 +25,7 @@ jobs:
       install:
         - true # Same as above
       script:
-        - gradle uploadArchives
+        - gradle uploadArchives -x test
 
     - stage: publish
       if: tag IS present
