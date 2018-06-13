@@ -134,7 +134,7 @@ public class DiscoveryClientTests
 		Service updatedSvc = this.kube.services().withName(cachedService).get();
 		assertThat(updatedSvc.getSpec().getClusterIP()).isEqualTo(newIP);
 
-		Thread.sleep((cacheRefreshSeconds * 1000) + 1000);
+		Thread.sleep((cacheRefreshSeconds * 1000) + 2000);
 
 		List<ServiceInstance> updatedInstances = discoveryClient.getInstances(cachedService);
 		assertThat(updatedInstances).hasAtLeastOneElementOfType(ServiceInstance.class);
