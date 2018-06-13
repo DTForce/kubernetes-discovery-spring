@@ -3,6 +3,8 @@ package com.dtforce.spring.kubernetes;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListenableFutureTask;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceList;
 import io.fabric8.kubernetes.api.model.ServicePort;
@@ -30,11 +32,26 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 		@Override
 		public Service load(String key) throws Exception
 		{
+			return fetchService(key);
+		}
+
+		@Override
+		public ListenableFuture<Service> reload(String key, Service oldValue) throws Exception
+		{
+			ListenableFutureTask<Service> task =
+				ListenableFutureTask.create(() -> fetchService(key));
+			return task;
+		}
+
+		private Service fetchService(String name)
+		{
 			try {
-				return kubeClient.services().withName(key).get();
+				Service service = kubeClient.services().withName(name).get();
+				log.info("Service cache refreshed - {}", service);
+				return service;
 			} catch(KubernetesClientException e) {
 				log.error("getInstances: failed to retrieve service '{}': API call failed. " +
-					"Check your K8s client configuration and account permissions.", key);
+					"Check your K8s client configuration and account permissions.", name);
 				throw e;
 			}
 		}
@@ -53,8 +70,9 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 		kubeClient = client;
 
 		serviceCache = CacheBuilder.newBuilder()
-			.maximumSize(10000)
-			.expireAfterWrite(5, TimeUnit.MINUTES) // TODO configurable
+			.maximumSize(500) // TODO configurable
+			.expireAfterWrite(10, TimeUnit.MINUTES) // TODO configurable
+			.refreshAfterWrite(5, TimeUnit.MINUTES) // TODO configurable
 			.build(new ServiceCacheLoader());
 	}
 
@@ -101,6 +119,8 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 		services.forEach((Service svc) -> {
 			serviceCache.put(svc.getMetadata().getName(), svc);
 		});
+
+		log.info("Services retrieved - {}", serviceList);
 
 		return services.stream()
 			.map(s -> s.getMetadata().getName())
