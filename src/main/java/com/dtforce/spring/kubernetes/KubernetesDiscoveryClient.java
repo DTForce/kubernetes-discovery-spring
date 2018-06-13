@@ -3,7 +3,9 @@ package com.dtforce.spring.kubernetes;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import io.fabric8.kubernetes.api.model.*;
+import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.ServiceList;
+import io.fabric8.kubernetes.api.model.ServicePort;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import org.slf4j.Logger;
@@ -12,7 +14,11 @@ import org.springframework.cloud.client.DefaultServiceInstance;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -68,9 +74,10 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 	@Override
 	public List<ServiceInstance> getInstances(String serviceId)
 	{
-		Service service = serviceCache.getUnchecked(serviceId);
-
-		if (service == null) {
+		Service service;
+		try {
+			service = serviceCache.getUnchecked(serviceId);
+		} catch(CacheLoader.InvalidCacheLoadException e) {
 			log.warn("getInstances: specified service '{}' doesn't exist", serviceId);
 			return Collections.emptyList();
 		}
