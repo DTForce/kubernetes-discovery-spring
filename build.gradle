@@ -39,8 +39,17 @@ def getGitRef = { ->
     return stdout.toString().trim()
 }
 
+def getGitCommit = { ->
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        commandLine 'git', 'rev-parse', '--short', 'HEAD'
+        standardOutput = stdout
+    }
+    return stdout.toString().trim()
+}
+
 def versionFromEnv = System.env["BUILD_VERSION"]
-version = (versionFromEnv != null ? versionFromEnv : "${getGitRef}-SNAPSHOT")
+version = (versionFromEnv != null ? versionFromEnv : "${getGitRef}-${getGitCommit}-SNAPSHOT")
 
 sourceCompatibility = 1.8
 
