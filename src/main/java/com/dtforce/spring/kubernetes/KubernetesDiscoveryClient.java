@@ -1,5 +1,8 @@
 package com.dtforce.spring.kubernetes;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
@@ -10,18 +13,49 @@ import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabledDiscoveryClient
 {
+
+	private class ServiceCacheLoader extends CacheLoader<String, Service>
+	{
+		private KubernetesClient k8s;
+
+		public ServiceCacheLoader(KubernetesClient k8s)
+		{
+			this.k8s = k8s;
+		}
+
+		@Override
+		public Service load(String key) throws Exception
+		{
+			try {
+				return kubeClient.services().withName(key).get();
+			} catch(KubernetesClientException e) {
+				log.error("getInstances: failed to retrieve service '{}': API call failed. " +
+					"Check your K8s client configuration and account permissions.", key);
+				throw e;
+			}
+		}
+	}
+
 	private static final String defaultPortName = "http";
 
 	private static Logger log = LoggerFactory.getLogger(KubernetesDiscoveryClient.class.getName());
 
 	private KubernetesClient kubeClient;
 
+	private LoadingCache<String, Service> serviceCache;
+
 	public KubernetesDiscoveryClient(KubernetesClient client)
 	{
 		kubeClient = client;
+
+		serviceCache = CacheBuilder.newBuilder()
+			.maximumSize(10000)
+			.expireAfterWrite(5, TimeUnit.MINUTES)
+			.build(new ServiceCacheLoader(kubeClient));
 	}
 
 	@Override
@@ -33,22 +67,36 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 	@Override
 	public List<ServiceInstance> getInstances(String serviceId)
 	{
-		Service service;
-		try {
-			service = kubeClient.services().withName(serviceId).get();
-		} catch(KubernetesClientException e) {
-			log.error("getInstances: failed to retrieve service '{}': API call failed. " +
-				"Check your K8s client configuration and account permissions.", serviceId);
-			throw e;
-		}
+		Service service = serviceCache.getUnchecked(serviceId);
 
-		// A get() return value can be null, unlike one from a list() call
 		if (service == null) {
 			log.warn("getInstances: specified service '{}' doesn't exist", serviceId);
 			return Collections.emptyList();
 		}
 
 		return getInstancesFromService(service);
+	}
+
+	@Override
+	public List<String> getServices()
+	{
+		// TODO caching
+
+		ServiceList serviceList;
+		try {
+			serviceList = kubeClient.services().list();
+		} catch (KubernetesClientException e) {
+			log.error("getServices: failed to retrieve the list of services: API call failed. " +
+				"Check your K8s client configuration and account permissions.");
+			throw e;
+		}
+
+		List<String> serviceNames = new ArrayList<>();
+		List<Service> items = serviceList.getItems();
+		for (Service svc : items) {
+			serviceNames.add(svc.getMetadata().getName());
+		}
+		return serviceNames;
 	}
 
 	@Override
@@ -133,26 +181,6 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 			));
 		}
 		return serviceInstances;
-	}
-
-	@Override
-	public List<String> getServices()
-	{
-		ServiceList serviceList;
-		try {
-			serviceList = kubeClient.services().list();
-		} catch (KubernetesClientException e) {
-			log.error("getServices: failed to retrieve the list of services: API call failed. " +
-				"Check your K8s client configuration and account permissions.");
-			throw e;
-		}
-
-		List<String> serviceNames = new ArrayList<>();
-		List<Service> items = serviceList.getItems();
-		for (Service svc : items) {
-			serviceNames.add(svc.getMetadata().getName());
-		}
-		return serviceNames;
 	}
 
 }
