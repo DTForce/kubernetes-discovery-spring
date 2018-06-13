@@ -14,11 +14,11 @@ import java.time.Duration;
 public class KubernetesDiscoveryAutoConfiguration
 {
 
-	@Value("${spring.kubernetes.discovery.cache.expire-after:10}")
-	private Integer cacheExpiryMinutes;
+	@Value("${spring.kubernetes.discovery.cache.expire-after:600}")
+	private Integer cacheExpirySeconds;
 
-	@Value("${spring.kubernetes.discovery.cache.refresh-after:5}")
-	private Integer cacheRefreshMinutes;
+	@Value("${spring.kubernetes.discovery.cache.refresh-after:300}")
+	private Integer cacheRefreshSeconds;
 
 	@Value("${spring.kubernetes.discovery.cache.maximum-size:500}")
 	private Integer maximumCacheSize;
@@ -36,7 +36,7 @@ public class KubernetesDiscoveryAutoConfiguration
 	{
 		return new KubernetesDiscoveryClient(
 			kubernetesClient(),
-			Duration.ofMinutes(cacheExpiryMinutes), Duration.ofMinutes(cacheRefreshMinutes),
+			Duration.ofSeconds(cacheExpirySeconds), Duration.ofSeconds(cacheRefreshSeconds),
 			maximumCacheSize
 		);
 	}
