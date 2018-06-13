@@ -27,13 +27,6 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 
 	private class ServiceCacheLoader extends CacheLoader<String, Service>
 	{
-		private KubernetesClient k8s;
-
-		public ServiceCacheLoader(KubernetesClient k8s)
-		{
-			this.k8s = k8s;
-		}
-
 		@Override
 		public Service load(String key) throws Exception
 		{
@@ -61,8 +54,8 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 
 		serviceCache = CacheBuilder.newBuilder()
 			.maximumSize(10000)
-			.expireAfterWrite(5, TimeUnit.MINUTES)
-			.build(new ServiceCacheLoader(kubeClient));
+			.expireAfterWrite(5, TimeUnit.MINUTES) // TODO configurable
+			.build(new ServiceCacheLoader());
 	}
 
 	@Override
@@ -88,8 +81,6 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 	@Override
 	public List<String> getServices()
 	{
-		// TODO caching
-
 		ServiceList serviceList;
 		try {
 			serviceList = kubeClient.services().list();
@@ -99,7 +90,19 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 			throw e;
 		}
 
-		return serviceList.getItems().stream()
+		List<Service> services = serviceList.getItems();
+
+		// Populate cache.
+		// getServices mostly called manually and not by Ribbon, and
+		// if getInstances is called right after it then we should
+		// take advantage of the cache instead of calling
+		// the API twice (1st call to list services, 2nd call to get info for one service)
+		// as we already get everything we need in the list() call
+		services.forEach((Service svc) -> {
+			serviceCache.put(svc.getMetadata().getName(), svc);
+		});
+
+		return services.stream()
 			.map(s -> s.getMetadata().getName())
 			.collect(Collectors.toList());
 	}
