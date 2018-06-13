@@ -56,7 +56,7 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 		{
 			try {
 				Service service = kubeClient.services().withName(name).get();
-				log.info("Service cache refreshed - {}", service);
+				log.info("Service cache refreshed for {} - {}", service.getMetadata().getName(), service);
 				return service;
 			} catch(KubernetesClientException e) {
 				log.error("getInstances: failed to retrieve service '{}': API call failed. " +
@@ -133,7 +133,7 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 			serviceCache.put(svc.getMetadata().getName(), svc);
 		});
 
-		log.info("Services retrieved - {}", serviceList);
+		log.info("Services retrieved - {}", services);
 
 		return services.stream()
 			.map(s -> s.getMetadata().getName())
