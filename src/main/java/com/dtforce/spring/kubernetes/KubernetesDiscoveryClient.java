@@ -4,7 +4,8 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListenableFutureTask;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceList;
 import io.fabric8.kubernetes.api.model.ServicePort;
@@ -16,12 +17,14 @@ import org.springframework.cloud.client.DefaultServiceInstance;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabledDiscoveryClient
@@ -29,6 +32,13 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 
 	private class ServiceCacheLoader extends CacheLoader<String, Service>
 	{
+		final ExecutorService executorService;
+
+		public ServiceCacheLoader(ExecutorService executorService)
+		{
+			this.executorService = executorService;
+		}
+
 		@Override
 		public Service load(String key) throws Exception
 		{
@@ -38,9 +48,8 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 		@Override
 		public ListenableFuture<Service> reload(String key, Service oldValue) throws Exception
 		{
-			ListenableFutureTask<Service> task =
-				ListenableFutureTask.create(() -> fetchService(key));
-			return task;
+			ListeningExecutorService listeningExecutorService = MoreExecutors.listeningDecorator(executorService);
+			return listeningExecutorService.submit(() -> fetchService(key));
 		}
 
 		private Service fetchService(String name)
@@ -65,15 +74,19 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 
 	private LoadingCache<String, Service> serviceCache;
 
-	public KubernetesDiscoveryClient(KubernetesClient client)
+	public KubernetesDiscoveryClient(
+		KubernetesClient client, Duration cacheExpireAfterWrite, Duration cacheRefreshAfterWrite, int maximumCacheSize
+	)
 	{
 		kubeClient = client;
 
 		serviceCache = CacheBuilder.newBuilder()
-			.maximumSize(500) // TODO configurable
-			.expireAfterWrite(10, TimeUnit.MINUTES) // TODO configurable
-			.refreshAfterWrite(5, TimeUnit.MINUTES) // TODO configurable
-			.build(new ServiceCacheLoader());
+			.maximumSize(maximumCacheSize)
+			.expireAfterWrite(cacheExpireAfterWrite)
+			.refreshAfterWrite(cacheRefreshAfterWrite)
+			.build(new ServiceCacheLoader(
+				Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
+			));
 	}
 
 	@Override

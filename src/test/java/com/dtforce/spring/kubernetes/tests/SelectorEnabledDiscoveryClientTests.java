@@ -1,7 +1,5 @@
 package com.dtforce.spring.kubernetes.tests;
 
-import com.dtforce.spring.kubernetes.KubernetesDiscoveryClient;
-import com.dtforce.spring.kubernetes.SelectorEnabledDiscoveryClient;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceBuilder;
 import io.fabric8.kubernetes.api.model.ServiceList;
@@ -13,11 +11,15 @@ import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.client.ServiceInstance;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.dtforce.spring.kubernetes.KubernetesDiscoveryClient;
+import com.dtforce.spring.kubernetes.SelectorEnabledDiscoveryClient;
+
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 public class SelectorEnabledDiscoveryClientTests
@@ -34,7 +36,11 @@ public class SelectorEnabledDiscoveryClientTests
 	public void setUp()
 	{
 		this.kube = server.getClient();
-		this.discoveryClient = new KubernetesDiscoveryClient(this.kube);
+		this.discoveryClient = new KubernetesDiscoveryClient(
+			this.kube,
+			Duration.ofMinutes(1), Duration.ofSeconds(3),
+			100
+		);
 
 		String namespace = kube.getNamespace();
 

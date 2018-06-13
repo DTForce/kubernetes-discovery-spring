@@ -1,6 +1,5 @@
 package com.dtforce.spring.kubernetes.tests;
 
-import com.dtforce.spring.kubernetes.KubernetesDiscoveryClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.KubernetesServer;
 import org.junit.Before;
@@ -10,12 +9,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 
-import javax.xml.ws.Service;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.dtforce.spring.kubernetes.KubernetesDiscoveryClient;
+
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 public class DiscoveryClientTests
@@ -36,7 +37,11 @@ public class DiscoveryClientTests
 	public void setUp()
 	{
 		this.kube = server.getClient();
-		this.discoveryClient = new KubernetesDiscoveryClient(this.kube);
+		this.discoveryClient = new KubernetesDiscoveryClient(
+			this.kube,
+			Duration.ofMinutes(1), Duration.ofSeconds(30),
+			100
+		);
 
 		assertThat(discoveryClient.getServices()).isEmpty();
 
