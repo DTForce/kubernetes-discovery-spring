@@ -14,6 +14,7 @@ import org.springframework.cloud.client.discovery.DiscoveryClient;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabledDiscoveryClient
 {
@@ -91,12 +92,9 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 			throw e;
 		}
 
-		List<String> serviceNames = new ArrayList<>();
-		List<Service> items = serviceList.getItems();
-		for (Service svc : items) {
-			serviceNames.add(svc.getMetadata().getName());
-		}
-		return serviceNames;
+		return serviceList.getItems().stream()
+			.map(s -> s.getMetadata().getName())
+			.collect(Collectors.toList());
 	}
 
 	@Override
