@@ -57,7 +57,9 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 		{
 			try {
 				Service service = kubeClient.services().withName(name).get();
-				log.info("Service cache refreshed for {} - {}", service.getMetadata().getName(), service);
+				if (service != null) {
+					log.info("Service cache refreshed for {} - {}", service.getMetadata().getName(), service);
+				}
 				printCacheStats();
 				return service;
 			} catch(KubernetesClientException e) {
@@ -71,10 +73,10 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 		{
 			CacheStats stats = serviceCache.stats();
 			StringBuilder statsMsg = new StringBuilder();
-			statsMsg.append("=== Kubernetes Discovery - Cache Stats ===\n");
+			statsMsg.append("\n=== Kubernetes Discovery - Cache Stats ===\n");
 			statsMsg.append(
 				String.format(
-					"=> [Cache Requests] total: %d | hits: %d (%02f %%) | misses: %d (%02f %%)\n",
+					"=> [Cache Requests] total: %d | hits: %d (%.2f %%) | misses: %d (%.2f %%)\n",
 					stats.requestCount(),
 					stats.hitCount(), stats.hitRate(),
 					stats.missCount(), stats.missRate()
@@ -82,7 +84,7 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 			);
 			statsMsg.append(
 				String.format(
-					"=> [Load Calls] total : %d | successes: %d | failures: %d | average load time : %02f ms\n",
+					"=> [Load Calls] total : %d | successes: %d | failures: %d | average load time : %.2f ms\n",
 					stats.loadCount(), stats.loadSuccessCount(), stats.loadExceptionCount(),
 					(stats.averageLoadPenalty() / 1000000.0)
 				)
