@@ -2,6 +2,7 @@ package com.dtforce.spring.kubernetes;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
+import com.google.common.cache.CacheStats;
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -57,12 +58,43 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 			try {
 				Service service = kubeClient.services().withName(name).get();
 				log.info("Service cache refreshed for {} - {}", service.getMetadata().getName(), service);
+				printCacheStats();
 				return service;
 			} catch(KubernetesClientException e) {
 				log.error("getInstances: failed to retrieve service '{}': API call failed. " +
 					"Check your K8s client configuration and account permissions.", name);
 				throw e;
 			}
+		}
+
+		private void printCacheStats()
+		{
+			CacheStats stats = serviceCache.stats();
+			StringBuilder statsMsg = new StringBuilder();
+			statsMsg.append("=== Kubernetes Discovery - Cache Stats ===\n");
+			statsMsg.append(
+				String.format(
+					"=> [Cache Requests] total: %d | hits: %d (%02f %%) | misses: %d (%02f %%)\n",
+					stats.requestCount(),
+					stats.hitCount(), stats.hitRate(),
+					stats.missCount(), stats.missRate()
+				)
+			);
+			statsMsg.append(
+				String.format(
+					"=> [Load Calls] total : %d | successes: %d | failures: %d | average load time : %02f ms\n",
+					stats.loadCount(), stats.loadSuccessCount(), stats.loadExceptionCount(),
+					(stats.averageLoadPenalty() / 1000000.0)
+				)
+			);
+			statsMsg.append(
+				String.format(
+					"=> [Other] eviction count: %d\n",
+					stats.evictionCount()
+				)
+			);
+			statsMsg.append("=== End of Cache Stats ===");
+			log.info(statsMsg.toString());
 		}
 	}
 
