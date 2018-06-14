@@ -43,24 +43,32 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 		@Override
 		public Service load(String key) throws Exception
 		{
-			return fetchService(key);
+			Service service = fetchService(key);
+			if (service != null) {
+				log.info("Service cache loaded for {} - {}", service.getMetadata().getName(), service);
+			}
+			printCacheStats();
+			return service;
 		}
 
 		@Override
 		public ListenableFuture<Service> reload(String key, Service oldValue) throws Exception
 		{
 			ListeningExecutorService listeningExecutorService = MoreExecutors.listeningDecorator(executorService);
-			return listeningExecutorService.submit(() -> fetchService(key));
+			return listeningExecutorService.submit(() -> {
+				Service service = fetchService(key);
+				if (service != null) {
+					log.info("Service cache refreshed for {} - {}", service.getMetadata().getName(), service);
+				}
+				printCacheStats();
+				return service;
+			});
 		}
 
 		private Service fetchService(String name)
 		{
 			try {
 				Service service = kubeClient.services().withName(name).get();
-				if (service != null) {
-					log.info("Service cache refreshed for {} - {}", service.getMetadata().getName(), service);
-				}
-				printCacheStats();
 				return service;
 			} catch(KubernetesClientException e) {
 				log.error("getInstances: failed to retrieve service '{}': API call failed. " +
