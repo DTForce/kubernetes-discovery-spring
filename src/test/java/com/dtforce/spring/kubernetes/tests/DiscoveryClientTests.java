@@ -126,8 +126,6 @@ public class DiscoveryClientTests
 
 		String newIP = "10.11.12.13";
 
-		Thread.sleep((cacheRefreshSeconds * 1000) * 2);
-
 		Service svc = this.kube.services().withName(cachedService).get();
 		svc.getSpec().setClusterIP(newIP);
 		this.kube.services().delete(svc);
@@ -138,7 +136,12 @@ public class DiscoveryClientTests
 
 		Thread.sleep((cacheRefreshSeconds * 1000) * 2);
 
+		// Calling the cache again will force it to realise that the entry for cachedService needs refreshing
+		discoveryClient.getInstances(cachedService);
+		Thread.sleep(1000);
+
 		List<ServiceInstance> updatedInstances = discoveryClient.getInstances(cachedService);
+
 		assertThat(updatedInstances).hasAtLeastOneElementOfType(ServiceInstance.class);
 		assertThat(updatedInstances.get(0).getHost()).isEqualTo(newIP);
 	}
