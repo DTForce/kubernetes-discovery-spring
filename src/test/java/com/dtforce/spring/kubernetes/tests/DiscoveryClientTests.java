@@ -126,6 +126,8 @@ public class DiscoveryClientTests
 
 		String newIP = "10.11.12.13";
 
+		Thread.sleep((cacheRefreshSeconds * 1000) * 2);
+
 		Service svc = this.kube.services().withName(cachedService).get();
 		svc.getSpec().setClusterIP(newIP);
 		this.kube.services().delete(svc);
