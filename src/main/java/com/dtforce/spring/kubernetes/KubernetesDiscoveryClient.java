@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabledDiscoveryClient
 {
 
-	private class ServiceCacheLoader extends CacheLoader<String, Service>
+	private class ServiceCacheLoader extends CacheLoader<String, List<ServiceInstance>>
 	{
 		final ExecutorService executorService;
 
@@ -41,18 +41,20 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 		}
 
 		@Override
-		public Service load(String key) throws Exception
+		public List<ServiceInstance> load(String key) throws Exception
 		{
 			Service service = fetchService(key);
 			if (service != null) {
 				log.info("Service cache loaded for {} - {}", service.getMetadata().getName(), service);
 			}
-			printCacheStats();
-			return service;
+			if (log.isDebugEnabled()) {
+				printCacheStats();
+			}
+			return getInstancesFromService(service);
 		}
 
 		@Override
-		public ListenableFuture<Service> reload(String key, Service oldValue) throws Exception
+		public ListenableFuture<List<ServiceInstance>> reload(String key, List<ServiceInstance> oldValue) throws Exception
 		{
 			ListeningExecutorService listeningExecutorService = MoreExecutors.listeningDecorator(executorService);
 			return listeningExecutorService.submit(() -> {
@@ -60,8 +62,10 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 				if (service != null) {
 					log.info("Service cache refreshed for {} - {}", service.getMetadata().getName(), service);
 				}
-				printCacheStats();
-				return service;
+				if (log.isDebugEnabled()) {
+					printCacheStats();
+				}
+				return getInstancesFromService(service);
 			});
 		}
 
@@ -104,7 +108,7 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 				)
 			);
 			statsMsg.append("=== End of Cache Stats ===");
-			log.info(statsMsg.toString());
+			log.debug(statsMsg.toString());
 		}
 	}
 
@@ -114,7 +118,7 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 
 	private KubernetesClient kubeClient;
 
-	private LoadingCache<String, Service> serviceCache;
+	private LoadingCache<String, List<ServiceInstance>> serviceCache;
 
 	public KubernetesDiscoveryClient(
 		KubernetesClient client, Duration cacheExpireAfterWrite, Duration cacheRefreshAfterWrite, int maximumCacheSize
@@ -127,7 +131,7 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 			.expireAfterWrite(cacheExpireAfterWrite)
 			.refreshAfterWrite(cacheRefreshAfterWrite)
 			.build(new ServiceCacheLoader(
-				Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
+				Executors.newSingleThreadExecutor()
 			));
 	}
 
@@ -140,15 +144,7 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 	@Override
 	public List<ServiceInstance> getInstances(String serviceId)
 	{
-		Service service;
-		try {
-			service = serviceCache.getUnchecked(serviceId);
-		} catch(CacheLoader.InvalidCacheLoadException e) {
-			log.warn("getInstances: specified service '{}' doesn't exist", serviceId);
-			return Collections.emptyList();
-		}
-
-		return getInstancesFromService(service);
+		return serviceCache.getUnchecked(serviceId);
 	}
 
 	@Override
@@ -172,10 +168,12 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 		// the API twice (1st call to list services, 2nd call to get info for one service)
 		// as we already get everything we need in the list() call
 		services.forEach((Service svc) -> {
-			serviceCache.put(svc.getMetadata().getName(), svc);
+			serviceCache.put(svc.getMetadata().getName(), getInstancesFromService(svc));
 		});
 
-		log.info("Services retrieved - {}", services);
+		if (log.isDebugEnabled()) {
+			log.debug("Services retrieved - {}", services);
+		}
 
 		return services.stream()
 			.map(s -> s.getMetadata().getName())
@@ -211,6 +209,9 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 
 	private List<ServiceInstance> getInstancesFromService(Service service)
 	{
+		if (service == null) {
+			return Collections.emptyList();
+		}
 		return getInstancesFromServiceList(Collections.singletonList(service));
 	}
 
