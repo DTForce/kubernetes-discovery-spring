@@ -39,8 +39,17 @@ def getGitRef = { ->
     return stdout.toString().trim()
 }
 
+def getGitCommit = { ->
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        commandLine 'git', 'rev-parse', '--short', 'HEAD'
+        standardOutput = stdout
+    }
+    return stdout.toString().trim()
+}
+
 def versionFromEnv = System.env["BUILD_VERSION"]
-version = (versionFromEnv != null ? versionFromEnv : "${getGitRef}-SNAPSHOT")
+version = (versionFromEnv != null ? versionFromEnv : "${getGitRef}-${getGitCommit}-SNAPSHOT")
 
 sourceCompatibility = 1.8
 
@@ -58,6 +67,7 @@ dependencyManagement {
         dependency 'io.fabric8:kubernetes-client:3.1.8'
         dependency 'io.fabric8:kubernetes-server-mock:3.1.8'
         dependency 'org.assertj:assertj-core:3.9.0'
+        dependency 'com.google.guava:guava:25.1-jre'
     }
 }
 
@@ -68,6 +78,7 @@ dependencies {
     compile('org.springframework.cloud:spring-cloud-commons')
     compile('org.springframework.cloud:spring-cloud-netflix-core')
     compile('com.netflix.ribbon:ribbon-loadbalancer')
+    compile('com.google.guava:guava')
 
     // Kubernetes Client
     compile('io.fabric8:kubernetes-client')

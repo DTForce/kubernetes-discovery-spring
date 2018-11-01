@@ -1,6 +1,15 @@
 package com.dtforce.spring.kubernetes;
 
-import io.fabric8.kubernetes.api.model.*;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.CacheStats;
+import com.google.common.cache.LoadingCache;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.ServiceList;
+import io.fabric8.kubernetes.api.model.ServicePort;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import org.slf4j.Logger;
@@ -9,19 +18,121 @@ import org.springframework.cloud.client.DefaultServiceInstance;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 
-import java.util.*;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabledDiscoveryClient
 {
+
+	private class ServiceCacheLoader extends CacheLoader<String, List<ServiceInstance>>
+	{
+		final ExecutorService executorService;
+
+		public ServiceCacheLoader(ExecutorService executorService)
+		{
+			this.executorService = executorService;
+		}
+
+		@Override
+		public List<ServiceInstance> load(String key) throws Exception
+		{
+			Service service = fetchService(key);
+			if (service != null) {
+				log.info("Service cache loaded for {} - {}", service.getMetadata().getName(), service);
+			}
+			if (log.isDebugEnabled()) {
+				printCacheStats();
+			}
+			return getInstancesFromService(service);
+		}
+
+		@Override
+		public ListenableFuture<List<ServiceInstance>> reload(String key, List<ServiceInstance> oldValue) throws Exception
+		{
+			ListeningExecutorService listeningExecutorService = MoreExecutors.listeningDecorator(executorService);
+			return listeningExecutorService.submit(() -> {
+				Service service = fetchService(key);
+				if (service != null) {
+					log.info("Service cache refreshed for {} - {}", service.getMetadata().getName(), service);
+				}
+				if (log.isDebugEnabled()) {
+					printCacheStats();
+				}
+				return getInstancesFromService(service);
+			});
+		}
+
+		private Service fetchService(String name)
+		{
+			try {
+				Service service = kubeClient.services().withName(name).get();
+				return service;
+			} catch(KubernetesClientException e) {
+				log.error("getInstances: failed to retrieve service '{}': API call failed. " +
+					"Check your K8s client configuration and account permissions.", name);
+				throw e;
+			}
+		}
+
+		private void printCacheStats()
+		{
+			CacheStats stats = serviceCache.stats();
+			StringBuilder statsMsg = new StringBuilder();
+			statsMsg.append("\n=== Kubernetes Discovery - Cache Stats ===\n");
+			statsMsg.append(
+				String.format(
+					"=> [Cache Requests] total: %d | hits: %d (%.2f %%) | misses: %d (%.2f %%)\n",
+					stats.requestCount(),
+					stats.hitCount(), stats.hitRate(),
+					stats.missCount(), stats.missRate()
+				)
+			);
+			statsMsg.append(
+				String.format(
+					"=> [Load Calls] total : %d | successes: %d | failures: %d | average load time : %.2f ms\n",
+					stats.loadCount(), stats.loadSuccessCount(), stats.loadExceptionCount(),
+					(stats.averageLoadPenalty() / 1000000.0)
+				)
+			);
+			statsMsg.append(
+				String.format(
+					"=> [Other] eviction count: %d\n",
+					stats.evictionCount()
+				)
+			);
+			statsMsg.append("=== End of Cache Stats ===");
+			log.debug(statsMsg.toString());
+		}
+	}
+
 	private static final String defaultPortName = "http";
 
 	private static Logger log = LoggerFactory.getLogger(KubernetesDiscoveryClient.class.getName());
 
 	private KubernetesClient kubeClient;
 
-	public KubernetesDiscoveryClient(KubernetesClient client)
+	private LoadingCache<String, List<ServiceInstance>> serviceCache;
+
+	public KubernetesDiscoveryClient(
+		KubernetesClient client, Duration cacheExpireAfterWrite, Duration cacheRefreshAfterWrite, int maximumCacheSize
+	)
 	{
 		kubeClient = client;
+
+		serviceCache = CacheBuilder.newBuilder()
+			.maximumSize(maximumCacheSize)
+			.expireAfterWrite(cacheExpireAfterWrite)
+			.refreshAfterWrite(cacheRefreshAfterWrite)
+			.build(new ServiceCacheLoader(
+				Executors.newSingleThreadExecutor()
+			));
 	}
 
 	@Override
@@ -33,22 +144,40 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 	@Override
 	public List<ServiceInstance> getInstances(String serviceId)
 	{
-		Service service;
+		return serviceCache.getUnchecked(serviceId);
+	}
+
+	@Override
+	public List<String> getServices()
+	{
+		ServiceList serviceList;
 		try {
-			service = kubeClient.services().withName(serviceId).get();
-		} catch(KubernetesClientException e) {
-			log.error("getInstances: failed to retrieve service '{}': API call failed. " +
-				"Check your K8s client configuration and account permissions.", serviceId);
+			serviceList = kubeClient.services().list();
+		} catch (KubernetesClientException e) {
+			log.error("getServices: failed to retrieve the list of services: API call failed. " +
+				"Check your K8s client configuration and account permissions.");
 			throw e;
 		}
 
-		// A get() return value can be null, unlike one from a list() call
-		if (service == null) {
-			log.warn("getInstances: specified service '{}' doesn't exist", serviceId);
-			return Collections.emptyList();
+		List<Service> services = serviceList.getItems();
+
+		// Populate cache.
+		// getServices mostly called manually and not by Ribbon, and
+		// if getInstances is called right after it then we should
+		// take advantage of the cache instead of calling
+		// the API twice (1st call to list services, 2nd call to get info for one service)
+		// as we already get everything we need in the list() call
+		services.forEach((Service svc) -> {
+			serviceCache.put(svc.getMetadata().getName(), getInstancesFromService(svc));
+		});
+
+		if (log.isDebugEnabled()) {
+			log.debug("Services retrieved - {}", services);
 		}
 
-		return getInstancesFromService(service);
+		return services.stream()
+			.map(s -> s.getMetadata().getName())
+			.collect(Collectors.toList());
 	}
 
 	@Override
@@ -80,6 +209,9 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 
 	private List<ServiceInstance> getInstancesFromService(Service service)
 	{
+		if (service == null) {
+			return Collections.emptyList();
+		}
 		return getInstancesFromServiceList(Collections.singletonList(service));
 	}
 
@@ -133,26 +265,6 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 			));
 		}
 		return serviceInstances;
-	}
-
-	@Override
-	public List<String> getServices()
-	{
-		ServiceList serviceList;
-		try {
-			serviceList = kubeClient.services().list();
-		} catch (KubernetesClientException e) {
-			log.error("getServices: failed to retrieve the list of services: API call failed. " +
-				"Check your K8s client configuration and account permissions.");
-			throw e;
-		}
-
-		List<String> serviceNames = new ArrayList<>();
-		List<Service> items = serviceList.getItems();
-		for (Service svc : items) {
-			serviceNames.add(svc.getMetadata().getName());
-		}
-		return serviceNames;
 	}
 
 }
