@@ -10,18 +10,18 @@ public interface SelectorEnabledDiscoveryClient extends DiscoveryClient
 {
 
 	/**
-	 * Get instances having the specified metadata pairs (equality-based query)
-	 * @param match
+	 * Get instances having the specified metadata labels (equality-based query)
+	 * @param match pairs - key is the name of the label and value is the value
 	 * @return List of service instances matching the query
 	 */
 	List<ServiceInstance> selectInstances(Map<String, String> match);
 
 
 	/**
-	 * Get instances having the metadata pairs specified in {@code match} but not
+	 * Get instances having the metadata labels specified in {@code match} but not
 	 * the ones specified in {@code doNotMatch}
-	 * @param match
-	 * @param doNotMatch
+	 * @param match pairs - key is the name of the label and value is the value
+	 * @param doNotMatch pairs - key is the name of the label and value is the value
 	 * @return List of service instances matching the query
 	 */
 	List<ServiceInstance> selectInstances(Map<String, String> match, Map<String, String> doNotMatch);

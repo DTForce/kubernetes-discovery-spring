@@ -75,8 +75,11 @@ See the official documentation of `kubernetes-client` here for more details: htt
 
 ### Spring Configuration properties
 
- * `spring.kubernetes.discovery.enabled` (boolean) : Enable/disable Spring Cloud Discovery integration. Enabled by default
- * `spring.kubernetes.ribbon.enabled` (boolean) : Enable/disable Ribbon integration. Enabled by default
+ * `spring.cloud.kubernetes.discovery.enabled` (boolean) : Enable/disable Spring Cloud Discovery integration. (default=true)
+ * `spring.cloud.kubernetes.discovery.cache.expire-after` (Duration) : Expire cached service after specified time. (default=100s)
+ * `spring.cloud.kubernetes.discovery.cache.refresh-after` (Duration) : Expire cached service after specified time. (default=10s)
+ * `spring.cloud.kubernetes.discovery.cache.maximum-size` (integer) : Maximum number of
+ * `spring.cloud.kubernetes.ribbon.enabled` (boolean) : Enable/disable Ribbon integration. (default=true)
 
 ## License
 

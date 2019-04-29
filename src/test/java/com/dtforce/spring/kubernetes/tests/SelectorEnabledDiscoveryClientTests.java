@@ -11,8 +11,6 @@ import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.client.ServiceInstance;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.dtforce.spring.kubernetes.KubernetesDiscoveryClient;
 import com.dtforce.spring.kubernetes.SelectorEnabledDiscoveryClient;
 
@@ -21,6 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 @SpringBootTest
 public class SelectorEnabledDiscoveryClientTests
 {
@@ -28,16 +28,14 @@ public class SelectorEnabledDiscoveryClientTests
 	@Rule
 	public KubernetesServer server = new KubernetesServer(true, false);
 
-	private KubernetesClient kube;
-
 	private SelectorEnabledDiscoveryClient discoveryClient;
 
 	@Before
 	public void setUp()
 	{
-		this.kube = server.getClient();
+		final KubernetesClient kube = server.getClient();
 		this.discoveryClient = new KubernetesDiscoveryClient(
-			this.kube,
+			kube,
 			Duration.ofMinutes(1), Duration.ofSeconds(3),
 			100
 		);
@@ -128,8 +126,18 @@ public class SelectorEnabledDiscoveryClientTests
 			.withPath("/api/v1/namespaces/test/services?labelSelector=environment%3Dproduction,tier!%3Ddatabase")
 			.andReturn(200, prodServicesWithoutDatabase).always();
 
+		// swap multi-selectors
+		server.expect()
+			.withPath("/api/v1/namespaces/test/services?labelSelector=tier!%3Ddatabase,environment%3Dproduction")
+			.andReturn(200, prodServicesWithoutDatabase).always();
+
 		server.expect()
 			.withPath("/api/v1/namespaces/test/services?labelSelector=environment%3Dstaging,tier%3Dfrontend")
+			.andReturn(200, singleStagingFrontend).always();
+
+		// swap multi-selectors
+		server.expect()
+			.withPath("/api/v1/namespaces/test/services?labelSelector=tier%3Dfrontend,environment%3Dstaging")
 			.andReturn(200, singleStagingFrontend).always();
 	}
 

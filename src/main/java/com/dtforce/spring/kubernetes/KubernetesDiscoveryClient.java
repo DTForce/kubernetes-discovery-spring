@@ -1,12 +1,8 @@
 package com.dtforce.spring.kubernetes;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.CacheStats;
-import com.google.common.cache.LoadingCache;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
+import com.github.benmanes.caffeine.cache.stats.CacheStats;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceList;
 import io.fabric8.kubernetes.api.model.ServicePort;
@@ -24,93 +20,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabledDiscoveryClient
 {
-
-	private class ServiceCacheLoader extends CacheLoader<String, List<ServiceInstance>>
-	{
-		final ExecutorService executorService;
-
-		public ServiceCacheLoader(ExecutorService executorService)
-		{
-			this.executorService = executorService;
-		}
-
-		@Override
-		public List<ServiceInstance> load(String key) throws Exception
-		{
-			Service service = fetchService(key);
-			if (service != null) {
-				log.info("Service cache loaded for {} - {}", service.getMetadata().getName(), service);
-			}
-			if (log.isDebugEnabled()) {
-				printCacheStats();
-			}
-			return getInstancesFromService(service);
-		}
-
-		@Override
-		public ListenableFuture<List<ServiceInstance>> reload(String key, List<ServiceInstance> oldValue) throws Exception
-		{
-			ListeningExecutorService listeningExecutorService = MoreExecutors.listeningDecorator(executorService);
-			return listeningExecutorService.submit(() -> {
-				Service service = fetchService(key);
-				if (service != null) {
-					log.info("Service cache refreshed for {} - {}", service.getMetadata().getName(), service);
-				}
-				if (log.isDebugEnabled()) {
-					printCacheStats();
-				}
-				return getInstancesFromService(service);
-			});
-		}
-
-		private Service fetchService(String name)
-		{
-			try {
-				Service service = kubeClient.services().withName(name).get();
-				return service;
-			} catch(KubernetesClientException e) {
-				log.error("getInstances: failed to retrieve service '{}': API call failed. " +
-					"Check your K8s client configuration and account permissions.", name);
-				throw e;
-			}
-		}
-
-		private void printCacheStats()
-		{
-			CacheStats stats = serviceCache.stats();
-			StringBuilder statsMsg = new StringBuilder();
-			statsMsg.append("\n=== Kubernetes Discovery - Cache Stats ===\n");
-			statsMsg.append(
-				String.format(
-					"=> [Cache Requests] total: %d | hits: %d (%.2f %%) | misses: %d (%.2f %%)\n",
-					stats.requestCount(),
-					stats.hitCount(), stats.hitRate(),
-					stats.missCount(), stats.missRate()
-				)
-			);
-			statsMsg.append(
-				String.format(
-					"=> [Load Calls] total : %d | successes: %d | failures: %d | average load time : %.2f ms\n",
-					stats.loadCount(), stats.loadSuccessCount(), stats.loadExceptionCount(),
-					(stats.averageLoadPenalty() / 1000000.0)
-				)
-			);
-			statsMsg.append(
-				String.format(
-					"=> [Other] eviction count: %d\n",
-					stats.evictionCount()
-				)
-			);
-			statsMsg.append("=== End of Cache Stats ===");
-			log.debug(statsMsg.toString());
-		}
-	}
 
 	private static final String defaultPortName = "http";
 
@@ -121,18 +34,19 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 	private LoadingCache<String, List<ServiceInstance>> serviceCache;
 
 	public KubernetesDiscoveryClient(
-		KubernetesClient client, Duration cacheExpireAfterWrite, Duration cacheRefreshAfterWrite, int maximumCacheSize
+		final KubernetesClient client,
+		final Duration cacheExpireAfterWrite,
+		final Duration cacheRefreshAfterWrite,
+		int maximumCacheSize
 	)
 	{
 		kubeClient = client;
 
-		serviceCache = CacheBuilder.newBuilder()
+		serviceCache = Caffeine.newBuilder()
 			.maximumSize(maximumCacheSize)
 			.expireAfterWrite(cacheExpireAfterWrite)
 			.refreshAfterWrite(cacheRefreshAfterWrite)
-			.build(new ServiceCacheLoader(
-				Executors.newSingleThreadExecutor()
-			));
+			.build(this::loadServiceInstances);
 	}
 
 	@Override
@@ -144,7 +58,7 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 	@Override
 	public List<ServiceInstance> getInstances(String serviceId)
 	{
-		return serviceCache.getUnchecked(serviceId);
+		return serviceCache.get(serviceId);
 	}
 
 	@Override
@@ -258,6 +172,7 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 
 			serviceInstances.add(new DefaultServiceInstance(
 				service.getMetadata().getName(),
+				service.getMetadata().getName(),
 				service.getSpec().getClusterIP(),
 				svcPort.getPort(),
 				false,
@@ -265,6 +180,51 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 			));
 		}
 		return serviceInstances;
+	}
+
+	private List<ServiceInstance> loadServiceInstances(String key)
+	{
+		Service service = fetchService(key);
+		if (service != null) {
+			log.info("Service cache loaded for {} - {}", service.getMetadata().getName(), service);
+		}
+		if (log.isDebugEnabled()) {
+			printCacheStats();
+		}
+		return getInstancesFromService(service);
+	}
+
+	private Service fetchService(String name)
+	{
+		try {
+			return kubeClient.services().withName(name).get();
+		} catch(KubernetesClientException e) {
+			log.error("getInstances: failed to retrieve service '{}': API call failed. " +
+				"Check your K8s client configuration and account permissions.", name);
+			throw e;
+		}
+	}
+
+	private void printCacheStats()
+	{
+		CacheStats stats = serviceCache.stats();
+		final String statsMsg = "\n=== Kubernetes Discovery - Cache Stats ===\n" +
+			String.format(
+				"=> [Cache Requests] total: %d | hits: %d (%.2f %%) | misses: %d (%.2f %%)\n",
+				stats.requestCount(),
+				stats.hitCount(),
+				stats.hitRate(),
+				stats.missCount(),
+				stats.missRate()
+			) +
+			String.format("=> [Load Calls] total : %d | successes: %d | failures: %d | average load time : %.2f ms\n",
+				stats.loadCount(),
+				stats.loadSuccessCount(),
+				stats.loadFailureCount(),
+				(stats.averageLoadPenalty() / 1000000.0)
+			) +
+			String.format("=> [Other] eviction count: %d\n=== End of Cache Stats ===", stats.evictionCount());
+		log.debug(statsMsg);
 	}
 
 }

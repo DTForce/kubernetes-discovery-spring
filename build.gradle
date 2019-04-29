@@ -1,14 +1,17 @@
 buildscript {
+	ext {
+		springBootVersion = '2.1.4.RELEASE'
+		springCloudVersion = 'Greenwich.SR1'
+	}
     repositories {
         mavenCentral()
         maven {
             url 'https://repo.spring.io/libs-milestone'
         }
     }
-}
-
-plugins {
-    id 'org.springframework.boot' version '1.5.10.RELEASE'
+	dependencies {
+		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+	}
 }
 
 repositories {
@@ -19,9 +22,9 @@ repositories {
 }
 
 apply plugin: 'java'
+apply plugin: 'java-library'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
-apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
 apply plugin: 'maven'
 apply plugin: 'signing'
@@ -53,35 +56,31 @@ version = (versionFromEnv != null ? versionFromEnv : "${getGitRef}-${getGitCommi
 
 sourceCompatibility = 1.8
 
-bootRepackage {
-    enabled = false
-}
-
 dependencyManagement {
+	imports {
+		mavenBom("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
+		mavenBom("org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}")
+	}
     dependencies {
-        dependency 'org.springframework.boot:spring-boot-autoconfigure:2.0.0.RELEASE'
-        dependency 'org.springframework:spring-context:5.0.3.RELEASE'
-        dependency 'org.springframework.cloud:spring-cloud-commons:2.0.0.M6'
-        dependency 'org.springframework.cloud:spring-cloud-netflix-core:2.0.0.M6'
-        dependency 'com.netflix.ribbon:ribbon-loadbalancer:2.2.4'
-        dependency 'io.fabric8:kubernetes-client:3.1.8'
-        dependency 'io.fabric8:kubernetes-server-mock:3.1.8'
+        dependency 'io.fabric8:kubernetes-client:4.2.2'
+        dependency 'io.fabric8:kubernetes-server-mock:4.2.2'
         dependency 'org.assertj:assertj-core:3.9.0'
-        dependency 'com.google.guava:guava:25.1-jre'
+		dependency 'com.github.ben-manes.caffeine:caffeine:2.7.0'
     }
 }
 
 dependencies {
     // Spring + Spring Cloud
-    compile('org.springframework.boot:spring-boot-autoconfigure')
-    compile('org.springframework:spring-context')
-    compile('org.springframework.cloud:spring-cloud-commons')
-    compile('org.springframework.cloud:spring-cloud-netflix-core')
-    compile('com.netflix.ribbon:ribbon-loadbalancer')
-    compile('com.google.guava:guava')
+    api('org.springframework.boot:spring-boot-autoconfigure')
+	api('org.springframework:spring-context')
+	api('org.springframework.cloud:spring-cloud-commons')
+	api('org.springframework.cloud:spring-cloud-starter-netflix-ribbon')
+	api('com.netflix.ribbon:ribbon-loadbalancer')
+
+	implementation('com.github.ben-manes.caffeine:caffeine')
 
     // Kubernetes Client
-    compile('io.fabric8:kubernetes-client')
+    implementation('io.fabric8:kubernetes-client')
 
     // Annotation Processor
     compileOnly('org.springframework.boot:spring-boot-configuration-processor')
@@ -150,6 +149,11 @@ uploadArchives {
                         name 'Stéphane Lepin'
                         email 'stephane.lepin@dtforce.com'
                     }
+					developer {
+						id 'jan.mares'
+						name 'Jan Mares'
+						email 'jan.mares@dtforce.com'
+					}
                 }
             }
         }
