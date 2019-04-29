@@ -9,7 +9,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.dtforce.spring.kubernetes.api.IServiceInstanceExtractor;
 import com.dtforce.spring.kubernetes.api.SelectorEnabledDiscoveryClient;
-import com.dtforce.spring.kubernetes.discovery.KubernetesServerList;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {TestConfiguration.class}, properties = {
@@ -27,15 +26,11 @@ public class ApplicationContextTests
 	@Autowired(required = false)
 	private SelectorEnabledDiscoveryClient discoveryClient;
 
-	@Autowired(required = false)
-	private KubernetesServerList kubernetesServerList;
-
 	@Test
 	public void contextLoads() {
 		assert kubernetesClient != null;
 		assert serviceInstanceExtractor != null;
 		assert discoveryClient == null;
-		assert kubernetesServerList == null;
 	}
 
 }

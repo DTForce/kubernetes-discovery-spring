@@ -1,8 +1,12 @@
 package com.dtforce.spring.kubernetes;
 
-import org.springframework.context.annotation.ComponentScan;
+import org.springframework.cloud.netflix.ribbon.RibbonAutoConfiguration;
+import org.springframework.context.annotation.Import;
 
-@ComponentScan
+import com.dtforce.spring.kubernetes.discovery.KubernetesDiscoveryAutoConfiguration;
+import com.dtforce.spring.kubernetes.ribbon.KubernetesRibbonAutoConfiguration;
+
+@Import({RibbonAutoConfiguration.class, KubernetesRibbonAutoConfiguration.class, KubernetesDiscoveryAutoConfiguration.class})
 public class TestConfiguration
 {
 
