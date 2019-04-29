@@ -1,4 +1,4 @@
-package com.dtforce.spring.kubernetes.tests;
+package com.dtforce.spring.kubernetes.discovery;
 
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceBuilder;
@@ -11,10 +11,10 @@ import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.client.ServiceInstance;
 
-import com.dtforce.spring.kubernetes.KubernetesDiscoveryClient;
-import com.dtforce.spring.kubernetes.SelectorEnabledDiscoveryClient;
+import com.dtforce.spring.kubernetes.instance.DefaultInstanceExtractor;
+import com.dtforce.spring.kubernetes.discovery.KubernetesDiscoveryClient;
+import com.dtforce.spring.kubernetes.api.SelectorEnabledDiscoveryClient;
 
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,8 +36,7 @@ public class SelectorEnabledDiscoveryClientTests
 		final KubernetesClient kube = server.getClient();
 		this.discoveryClient = new KubernetesDiscoveryClient(
 			kube,
-			Duration.ofMinutes(1), Duration.ofSeconds(3),
-			100
+			new DefaultInstanceExtractor("http")
 		);
 
 		String namespace = kube.getNamespace();

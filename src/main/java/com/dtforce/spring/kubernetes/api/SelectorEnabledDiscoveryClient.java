@@ -1,4 +1,4 @@
-package com.dtforce.spring.kubernetes;
+package com.dtforce.spring.kubernetes.api;
 
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;

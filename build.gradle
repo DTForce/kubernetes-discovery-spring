@@ -75,19 +75,15 @@ dependencies {
 	api('org.springframework:spring-context')
 	api('org.springframework.cloud:spring-cloud-commons')
 	api('org.springframework.cloud:spring-cloud-starter-netflix-ribbon')
-	api('com.netflix.ribbon:ribbon-loadbalancer')
-
-	implementation('com.github.ben-manes.caffeine:caffeine')
 
     // Kubernetes Client
-    implementation('io.fabric8:kubernetes-client')
-
-    // Annotation Processor
-    compileOnly('org.springframework.boot:spring-boot-configuration-processor')
+	api('io.fabric8:kubernetes-client')
 
     // test dependencies
     testCompile('org.springframework.boot:spring-boot-starter-test')
-    testCompile('io.fabric8:kubernetes-server-mock')
+    testCompile('io.fabric8:kubernetes-server-mock') {
+		exclude group: 'io.sundr', module: 'builder-annotations'
+	}
     testCompile('org.assertj:assertj-core')
 }
 
