@@ -1,9 +1,9 @@
 package com.dtforce.spring.kubernetes.ribbon;
 
 import com.netflix.client.config.IClientConfig;
+import com.netflix.loadbalancer.ServerList;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -17,9 +17,8 @@ public class KubernetesRibbonConfiguration
 {
 
 	@Bean
-	@ConditionalOnProperty("spring.cloud.kubernetes.ribbon.enabled")
 	@ConditionalOnBean({KubernetesClient.class, IClientConfig.class, IServiceInstanceExtractor.class})
-	public KubernetesServerList kubernetesServerList(
+	public ServerList<?> kubernetesServerList(
 		@NotNull final KubernetesClient kubernetesClient,
 		@NotNull final IClientConfig clientConfig,
 		@NotNull final IServiceInstanceExtractor serviceInstanceExtractor
