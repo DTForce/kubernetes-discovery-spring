@@ -47,11 +47,7 @@ public class KubernetesDiscoveryClient implements DiscoveryClient, SelectorEnabl
 	@Override
 	public List<ServiceInstance> getInstances(String serviceId)
 	{
-		Service service = fetchService(serviceId);
-		if (service != null) {
-			log.info("Service cache loaded for {} - {}", service.getMetadata().getName(), service);
-		}
-		return getInstancesFromService(service);
+		return getInstancesFromService(fetchService(serviceId));
 	}
 
 	@Override
