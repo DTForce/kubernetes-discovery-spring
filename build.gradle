@@ -81,6 +81,7 @@ dependencies {
 
     // test dependencies
     testCompile('org.springframework.boot:spring-boot-starter-test')
+	testCompile('org.springframework:spring-web')
     testCompile('io.fabric8:kubernetes-server-mock') {
 		exclude group: 'io.sundr', module: 'builder-annotations'
 	}

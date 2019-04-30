@@ -17,7 +17,7 @@ public class KubernetesRibbonConfiguration
 {
 
 	@Bean
-	@ConditionalOnBean({KubernetesClient.class, IClientConfig.class, IServiceInstanceExtractor.class})
+	@ConditionalOnBean({KubernetesClient.class, IServiceInstanceExtractor.class})
 	public ServerList<?> kubernetesServerList(
 		@NotNull final KubernetesClient kubernetesClient,
 		@NotNull final IClientConfig clientConfig,
