@@ -4,13 +4,21 @@
 
 Kubernetes Service Discovery for Spring Cloud and Ribbon
 
+Compatible with __Spring Boot 2.1.0__ and __Spring Cloud Greenwich__
+
 ## Overview
 
 This library provides implementations of Spring Cloud's `DiscoveryClient` class and
-Ribbon's `ServerList`. It is compatible with Spring Cloud Finchley and is meant
+Ribbon's `ServerList`. It is compatible with Spring Cloud Greenwich and is meant
 to be a very thin integration layer between Kubernetes and Spring Cloud + Ribbon.
 
-Under the hood, it makes use of fabric8's `kubernetes-client` Java library to communicate
+Compared to other integrations, this one still leaves the actual load balancing on
+kubernetes. Its purpose is discover to services and provide seamless transition between
+other Ribbon providers like Eureka. That means, that you can still use `@LoadBalanced 
+RestTemplate` while avoiding problems with stale Pod IPs during rolling update of a 
+deployment or other changes to Service-to-Pod mapping in Kubernetes. 
+
+Under the hood, the library makes use of fabric8's `kubernetes-client` Java library to communicate
 with the Kubernetes cluster.
 
 *Made with :heart: in Prague by [DT>Force](http://www.dtforce.com/).*
@@ -27,16 +35,6 @@ with the Kubernetes cluster.
         <version>1.1.0</version>
     </dependency>
 </dependencies>
-<repositories>
-    <repository>
-        <id>spring-milestones</id>
-        <name>Spring Milestones</name>
-        <url>https://repo.spring.io/libs-milestone</url>
-        <snapshots>
-            <enabled>false</enabled>
-        </snapshots>
-    </repository>
-</repositories>
 ```
 
 ### Gradle
@@ -44,11 +42,6 @@ with the Kubernetes cluster.
 ```groovy
 dependencies {
     compile 'com.dtforce:kubernetes-discovery-spring:1.1.0'
-}
-repositories {
-    maven {
-        url 'https://repo.spring.io/libs-milestone'
-    }
 }
 ```
 
@@ -75,8 +68,10 @@ See the official documentation of `kubernetes-client` here for more details: htt
 
 ### Spring Configuration properties
 
- * `spring.kubernetes.discovery.enabled` (boolean) : Enable/disable Spring Cloud Discovery integration. Enabled by default
- * `spring.kubernetes.ribbon.enabled` (boolean) : Enable/disable Ribbon integration. Enabled by default
+ * `spring.cloud.kubernetes.enabled` (boolean) : Enable/disable the whole library integration - if set to true, bean of 
+ `KubernetesClient`(fabric8) is registered, if one does not exist. (default=false)
+ * `spring.cloud.kubernetes.discovery.enabled` (boolean) : Enable/disable Spring Cloud Discovery integration. (default=false)
+ * `spring.cloud.kubernetes.ribbon.enabled` (boolean) : Enable/disable Ribbon integration. (default=false)
 
 ## License
 

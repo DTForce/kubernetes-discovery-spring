@@ -1,6 +1,5 @@
-package com.dtforce.spring.kubernetes.tests;
+package com.dtforce.spring.kubernetes.discovery;
 
-import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.server.mock.KubernetesServer;
 import org.junit.Before;
@@ -10,14 +9,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import com.dtforce.spring.kubernetes.instance.DefaultInstanceExtractor;
+import com.dtforce.spring.kubernetes.discovery.KubernetesDiscoveryClient;
 
-import com.dtforce.spring.kubernetes.KubernetesDiscoveryClient;
-
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 public class DiscoveryClientTests
@@ -27,25 +26,18 @@ public class DiscoveryClientTests
 
 	private final String multiPortServiceId = "multiport-service";
 
-	private final String cachedService = "cached-service";
-
-	private final int cacheRefreshSeconds = 3;
-
 	@Rule
 	public KubernetesServer server = new KubernetesServer(true, true);
-
-	private KubernetesClient kube;
 
 	private DiscoveryClient discoveryClient;
 
 	@Before
 	public void setUp()
 	{
-		this.kube = server.getClient();
+		final KubernetesClient kube = server.getClient();
 		this.discoveryClient = new KubernetesDiscoveryClient(
-			this.kube,
-			Duration.ofMinutes(1), Duration.ofSeconds(cacheRefreshSeconds),
-			100
+			kube,
+			new DefaultInstanceExtractor("http")
 		);
 
 		assertThat(discoveryClient.getServices()).isEmpty();
@@ -86,21 +78,6 @@ public class DiscoveryClientTests
 					.endPort()
 			.and()
 			.done();
-
-		kube.services().createNew()
-			.withNewMetadata()
-				.withName(cachedService)
-				.withNamespace(kube.getNamespace())
-				.withLabels(svcLabels)
-			.and()
-			.withNewSpec()
-				.withType("ClusterIP")
-				.withClusterIP("192.168.1.122")
-				.addNewPort()
-					.withPort(80).withProtocol("TCP")
-					.endPort()
-			.and()
-			.done();
 	}
 
 	@Test
@@ -116,34 +93,6 @@ public class DiscoveryClientTests
 		List<ServiceInstance> instances = discoveryClient.getInstances(serviceId);
 		assertThat(instances).hasAtLeastOneElementOfType(ServiceInstance.class);
 		validateServiceInstance(instances.get(0));
-	}
-
-	@Test
-	public void cacheReloadSuccess() throws InterruptedException
-	{
-		List<ServiceInstance> initialInstances = discoveryClient.getInstances(cachedService);
-		assertThat(initialInstances).hasAtLeastOneElementOfType(ServiceInstance.class);
-
-		String newIP = "10.11.12.13";
-
-		Service svc = this.kube.services().withName(cachedService).get();
-		svc.getSpec().setClusterIP(newIP);
-		this.kube.services().delete(svc);
-		this.kube.services().createOrReplace(svc);
-
-		Service updatedSvc = this.kube.services().withName(cachedService).get();
-		assertThat(updatedSvc.getSpec().getClusterIP()).isEqualTo(newIP);
-
-		Thread.sleep((cacheRefreshSeconds * 1000) * 2);
-
-		// Calling the cache again will force it to realise that the entry for cachedService needs refreshing
-		discoveryClient.getInstances(cachedService);
-		Thread.sleep(1000);
-
-		List<ServiceInstance> updatedInstances = discoveryClient.getInstances(cachedService);
-
-		assertThat(updatedInstances).hasAtLeastOneElementOfType(ServiceInstance.class);
-		assertThat(updatedInstances.get(0).getHost()).isEqualTo(newIP);
 	}
 
 	@Test

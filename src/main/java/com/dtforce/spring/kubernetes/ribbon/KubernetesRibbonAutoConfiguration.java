@@ -1,4 +1,4 @@
-package com.dtforce.spring.kubernetes;
+package com.dtforce.spring.kubernetes.ribbon;
 
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @EnableConfigurationProperties
-@ConditionalOnProperty(name = "spring.kubernetes.ribbon.enabled", matchIfMissing = true)
+@ConditionalOnProperty("spring.cloud.kubernetes.ribbon.enabled")
 @AutoConfigureAfter(RibbonAutoConfiguration.class)
 @RibbonClients(defaultConfiguration = KubernetesRibbonConfiguration.class)
 public class KubernetesRibbonAutoConfiguration
